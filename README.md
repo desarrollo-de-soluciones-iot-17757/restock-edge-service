@@ -1,1 +1,268 @@
-# restock-edge-service
+# Restock Edge Service
+
+`restock-edge-service` is a lightweight IoT edge API for ingesting telemetry
+emitted by Restock smart inventory devices.  The service follows a
+Domain-Driven Design (DDD) approach and separates device authentication from
+telemetry ingestion.
+
+At its current stage, the service provides:
+
+- device authentication using `device_id` + `X-API-Key`
+- ingestion of weight measurements from Restock smart scales
+- SQLite persistence through Peewee ORM
+- timestamp normalization to UTC
+- a layered architecture aligned with DDD bounded contexts
+
+## Current Scope
+
+This repository currently implements a focused base version of the edge
+service:
+
+- **Implemented**
+  - registration/lookup of a development test device
+  - authentication of device-originated requests
+  - creation and persistence of weight records
+  - timestamp normalization to UTC
+  - automatic local database bootstrap on first request
+- **Not implemented yet**
+  - temperature and humidity telemetry
+  - anomaly detection
+  - device health metrics
+  - MQTT integration
+  - cloud synchronization with the Restock backend
+  - production credential provisioning
+
+Keeping the README aligned with the implemented scope is important in IoT
+projects, where firmware contracts and API behavior must remain explicit.
+
+## Why DDD for the Edge Service?
+
+In IoT systems, devices, telemetry, authentication and persistence can evolve
+independently.  DDD helps keep the project maintainable by organizing the code
+around business capabilities instead of purely technical folders.
+
+This base service is split into two bounded contexts:
+
+### 1. IAM (Identity and Access Management)
+
+Responsible for identifying devices and validating their credentials.
+
+- **Core concept**: `Device`
+- **Primary responsibility**: authenticate incoming requests from Restock IoT
+  devices
+
+### 2. Tracking
+
+Responsible for validating and storing telemetry.
+
+- **Core concept**: `WeightRecord`
+- **Primary responsibility**: accept weight readings and persist them locally
+
+The Tracking context depends on IAM only for device validation, which keeps the
+telemetry model decoupled from authentication details.
+
+## Layered Architecture
+
+Each bounded context follows the same DDD-inspired structure:
+
+- **Domain**
+  - entities and domain services
+  - business rules and invariants
+  - no framework or ORM concerns
+- **Application**
+  - orchestration of use cases
+  - coordination of repositories and domain services
+- **Infrastructure**
+  - Peewee models
+  - repository implementations
+  - persistence details
+- **Interfaces**
+  - Flask HTTP endpoints and request handling
+
+## Project Structure
+
+```text
+restock-edge-service/
+├── app.py
+├── requirements.txt
+├── README.md
+├── LICENSE.md
+├── docs/
+│   ├── class-diagram.puml
+│   └── user-stories.md
+├── iam/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   └── interfaces/
+├── tracking/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   └── interfaces/
+└── shared/
+    └── infrastructure/
+```
+
+## Technology Stack
+
+- Python 3.13+
+- Flask
+- Peewee
+- SQLite
+- python-dateutil
+
+Exact Python dependencies are declared in [`requirements.txt`](requirements.txt).
+
+## Getting Started
+
+### 1. Create a virtual environment
+
+```sh
+python -m venv .venv
+```
+
+Windows:
+
+```sh
+.venv\Scripts\activate
+```
+
+Linux/macOS:
+
+```sh
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```sh
+pip install -r requirements.txt
+```
+
+### 3. Run the service
+
+```sh
+python app.py
+```
+
+The Flask application runs in debug mode when started this way.
+
+## Runtime Behavior
+
+The application performs bootstrap work before serving the first request:
+
+- initializes the SQLite database
+- creates the `devices` and `weight_records` tables if they do not exist
+- seeds a development test device if absent
+
+Database initialization is triggered by the Flask `before_request` hook, so the
+setup occurs on the first incoming HTTP request handled by the process.
+
+## Development Test Device
+
+For local development, the application seeds the following device if it is not
+already present in the database:
+
+- `device_id`: `restock-scale-001`
+- `api_key`: `test-api-key-123`
+
+> [!WARNING]
+> These credentials are hard-coded for local development only. Do not reuse
+> them in production or on real IoT deployments.
+
+## API Contract
+
+### Create a weight record
+
+`POST /api/v1/tracking/weight-records`
+
+Creates a new weight telemetry record for an authenticated Restock device.
+
+#### Required headers
+
+- `Content-Type: application/json`
+- `X-API-Key: <device api key>`
+
+#### Request body
+
+```json
+{
+  "device_id": "restock-scale-001",
+  "weight": 1200.5,
+  "created_at": "2026-05-25T12:00:00-05:00"
+}
+```
+
+#### Request fields
+
+- `device_id` (`string`, required): unique device identifier
+- `weight` (`number`, required): measured weight expressed in grams
+- `created_at` (`string`, optional): ISO 8601 timestamp; when omitted, the
+  service uses the current UTC time
+
+#### Example request
+
+```sh
+curl -X POST http://127.0.0.1:5000/api/v1/tracking/weight-records \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: test-api-key-123' \
+  -d '{
+    "device_id": "restock-scale-001",
+    "weight": 1200.5,
+    "created_at": "2026-05-25T12:00:00-05:00"
+  }'
+```
+
+#### Success response
+
+`201 Created`
+
+```json
+{
+  "id": 1,
+  "device_id": "restock-scale-001",
+  "weight": 1200.5,
+  "created_at": "2026-05-25T17:00:00+00:00"
+}
+```
+
+#### Error responses
+
+- `400 Bad Request`
+  - missing required fields
+  - invalid weight value
+  - malformed timestamp
+- `401 Unauthorized`
+  - missing `device_id`
+  - missing `X-API-Key`
+  - invalid device/API key pair
+
+## Operational Notes for IoT Projects
+
+When adapting this service for a real IoT deployment, consider the following:
+
+- **Credential management**: replace hard-coded development credentials with a
+  secure enrollment or provisioning flow.
+- **Persistence**: SQLite is suitable for local development and lightweight
+  edge deployments, but not ideal for high-write concurrency.
+- **Observability**: add structured logging, trace correlation and a dedicated
+  health check endpoint before production use.
+- **Device contracts**: version telemetry payloads carefully so firmware and
+  server-side ingestion remain compatible.
+- **Startup lifecycle**: move bootstrap logic out of `before_request` if you
+  need deterministic initialization during container startup.
+
+## Documentation
+
+Additional documentation is available in [`docs/`](docs):
+
+- [`docs/user-stories.md`](docs/user-stories.md): technical stories and
+  acceptance criteria for unattended device-to-edge-service interactions.
+- [`docs/class-diagram.puml`](docs/class-diagram.puml): PlantUML diagram of the
+  bounded contexts, layers and relationships.
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE.md`](LICENSE.md)
+for details.
