@@ -16,6 +16,8 @@ iam_api = Blueprint("iam_api", __name__)
 auth_service = AuthApplicationService()
 
 
+
+@iam_api.route("/api/v1/iam/devices/status", methods=["POST"])
 def authenticate_request():
     """Validate the device identity for an incoming HTTP request.
 
@@ -49,3 +51,34 @@ def authenticate_request():
         return jsonify({"error": "Invalid device_id or API key"}), 401
 
     return None
+
+
+@iam_api.route("/api/v1/iam/devices", methods=["POST"])
+def register_device():
+    """Register a new IoT device for the local edge service.
+
+    Expects a JSON body containing ``device_id`` (the device's MAC address).
+    Following this project's authentication scheme, the device's ``api_key``
+    is set equal to its ``device_id``.
+
+    Idempotent: if the device is already registered, returns the existing
+    record without modifying it.
+
+    Returns:
+        tuple[flask.Response, int]: ``201 Created`` with the device payload if
+        newly registered, ``200 OK`` if it already existed, or
+        ``400 Bad Request`` if ``device_id`` is missing.
+    """
+    data = request.json
+    device_id = data.get("device_id") if data else None
+
+    if not isinstance(device_id, str) or not device_id.strip():
+        return jsonify({"error": "Missing device_id"}), 400
+
+    device, created = auth_service.register_device(device_id)
+    status_code = 201 if created else 200
+
+    return jsonify({
+        "device_id": device.device_id,
+        "created_at": device.created_at.isoformat(),
+    }), status_code

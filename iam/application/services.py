@@ -58,3 +58,19 @@ class AuthApplicationService:
             Device: Domain entity for the pre-configured test device.
         """
         return self.device_repository.get_or_create_test_device()
+
+    def register_device(self, device_id: str) -> tuple[Device, bool]:
+        """Register a new device by its identifier. (MAC address).
+
+                Idempotent: if a device with the given ``device_id`` already exists,
+        it is returned unchanged.
+
+        Args:
+            device_id (str): Unique identifier of the device (its MAC
+                address).
+
+        Returns:
+            tuple[Device, bool]: The device entity, and ``True`` if it was
+            newly created or ``False`` if it already existed.
+        """
+        return self.device_repository.create_or_get_device(device_id)
