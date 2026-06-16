@@ -15,8 +15,6 @@ iam_api = Blueprint("iam_api", __name__)
 # Module-level singleton instantiated once per worker process.
 auth_service = AuthApplicationService()
 
-
-
 @iam_api.route("/api/v1/iam/devices/status", methods=["POST"])
 def authenticate_request():
     """Validate the device identity for an incoming HTTP request.

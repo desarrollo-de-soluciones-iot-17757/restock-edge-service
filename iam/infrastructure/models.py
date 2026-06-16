@@ -5,7 +5,7 @@ Defines the ``devices`` database table used to persist
 the infrastructure layer; it must not be imported directly by the domain or
 application layers.  Access is mediated through the repository.
 """
-from peewee import CharField, DateTimeField, Model
+from peewee import CharField, DateTimeField, Model, AutoField
 
 from shared.infrastructure.database import db
 
@@ -25,8 +25,8 @@ class Device(Model):
             registered in the local edge database.
     """
 
-    device_id = CharField(primary_key=True)
-    api_key = CharField()
+    device_id = AutoField()
+    api_key = CharField(unique=True)
     created_at = DateTimeField()
 
     class Meta:

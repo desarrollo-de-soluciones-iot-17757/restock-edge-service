@@ -59,18 +59,20 @@ class AuthApplicationService:
         """
         return self.device_repository.get_or_create_test_device()
 
-    def register_device(self, device_id: str) -> tuple[Device, bool]:
-        """Register a new device by its identifier. (MAC address).
+    def register_device(self, mac_address: str) -> tuple[Device, bool]:
+        """Register a new device by its MAC address.
 
-                Idempotent: if a device with the given ``device_id`` already exists,
-        it is returned unchanged.
+        ``device_id`` is assigned automatically as an auto-incrementing
+        integer; ``api_key`` stores the supplied MAC address.
+
+        Idempotent: if a device with the given MAC address already exists, it
+        is returned unchanged.
 
         Args:
-            device_id (str): Unique identifier of the device (its MAC
-                address).
+            mac_address (str): MAC address of the device.
 
         Returns:
             tuple[Device, bool]: The device entity, and ``True`` if it was
             newly created or ``False`` if it already existed.
         """
-        return self.device_repository.create_or_get_device(device_id)
+        return self.device_repository.create_or_get(mac_address)

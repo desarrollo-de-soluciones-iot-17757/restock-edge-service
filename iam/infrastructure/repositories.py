@@ -71,27 +71,21 @@ class DeviceRepository:
         return Device(device.device_id, device.api_key, device.created_at)
 
     @staticmethod
-    def create_or_get_device(device_id: str) -> tuple[Device, bool]:
-        """Create a new device with the given ID, or return the existing one.
+    def create_or_get(mac_address: str) -> tuple[Device, bool]:
+        """Create a device for the given MAC address, or return the existing one.
 
-        This method is intended for testing and development purposes.  It allows
-        you to create a new device with a unique ID and a randomly generated API
-        key, or retrieve an existing device if one with the same ID already
-        exists.
+        ``device_id`` is assigned automatically by the database as an
+        auto-incrementing integer; ``api_key`` stores ``mac_address``.
 
         Args:
-            device_id (str): Unique identifier of the device (its MAC
-                address).
+            mac_address (str): MAC address of the device.
 
         Returns:
             tuple[Device, bool]: The domain entity, and ``True`` if it was
             newly created, ``False`` if it already existed.
         """
         device, created = DeviceModel.get_or_create(
-            device_id=device_id,
-            defaults={
-                "api_key": device_id,
-                "created_at": datetime.now(timezone.utc),
-            },
+            api_key=mac_address,
+            defaults={"created_at": datetime.now(timezone.utc)},
         )
         return Device(device.device_id, device.api_key, device.created_at), created
