@@ -21,13 +21,13 @@ from tracking.interfaces.services import tracking_api
 # The Flask application instance.
 app = Flask(__name__)
 
-# Register the IAM bounded-context Blueprint.
+# The IAM bounded-context Blueprint is registered first to ensure its authentication logic is available
 app.register_blueprint(iam_api)
 
-# Register the Tracking bounded-context Blueprint.
+# The Tracking bounded-context Blueprint is registered next, followed by the Devices Blueprint.  This ordering allows the Tracking endpoints to delegate authentication to the IAM service before processing device-related requests.
 app.register_blueprint(tracking_api)
 
-# Register the Devices bounded-context Blueprint.
+# The Devices bounded-context Blueprint is registered last, as it may depend on authentication and tracking logic provided by the previously registered Blueprints.  This ordering ensures that all necessary services are available when handling device-related API requests.
 app.register_blueprint(devices_api)
 
 # Flag to track whether the database has been initialized.

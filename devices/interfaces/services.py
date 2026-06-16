@@ -18,7 +18,7 @@ devices_api = Blueprint("devices_api", __name__)
 # Module-level singleton; it contains no request-specific mutable state.
 device_threshold_service = DeviceThresholdApplicationService()
 
-@devices_api.route("/api/v1/devices/<str:device_id>/thresholds", methods=["POST"])
+@devices_api.route("/api/v1/devices/<device_id>/thresholds", methods=["POST"])
 def create_threshold_for_device(device_id: str):
     """
     Endpoint to create a new device threshold.
@@ -62,7 +62,7 @@ def create_threshold_for_device(device_id: str):
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
 
-@devices_api.route("/api/v1/devices/<str:device_id>/thresholds", methods=["PUT"])
+@devices_api.route("/api/v1/devices/<device_id>/thresholds", methods=["PUT"])
 def update_threshold_for_device(device_id: str):
     """
     Endpoint to update an existing device threshold.
