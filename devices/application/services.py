@@ -52,3 +52,17 @@ class DeviceThresholdApplicationService:
         )
 
         return self.device_threshold_repository.save(record)
+
+    def update_device_threshold(
+            self,
+            device_threshold: DeviceThreshold
+    ) -> DeviceThreshold:
+        """
+        Update a device threshold record.
+
+        :param device_threshold: The device threshold record to update.
+
+        :return: The updated device threshold record.
+        """
+
+        return self.device_threshold_repository.update(device_threshold)
