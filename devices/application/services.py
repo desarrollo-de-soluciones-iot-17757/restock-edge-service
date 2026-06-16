@@ -55,14 +55,36 @@ class DeviceThresholdApplicationService:
 
     def update_device_threshold(
             self,
-            device_threshold: DeviceThreshold
+            device_id: str,
+            custom_supply_weight: float,
+            custom_supply_unit_measurement: str,
+            minimum_humidity_percentage: float,
+            maximum_humidity_percentage: float,
+            minimum_temperature_in_celsius: float,
+            maximum_temperature_in_celsius: float,
     ) -> DeviceThreshold:
         """
         Update a device threshold record.
 
-        :param device_threshold: The device threshold record to update.
+        :param device_id:
+        :param custom_supply_weight:
+        :param custom_supply_unit_measurement:
+        :param minimum_humidity_percentage:
+        :param maximum_humidity_percentage:
+        :param minimum_temperature_in_celsius:
+        :param maximum_temperature_in_celsius:
 
         :return: The updated device threshold record.
         """
 
-        return self.device_threshold_repository.update(device_threshold)
+        updated_threshold = self.device_threshold_service.create_threshold_for_device(
+            device_id,
+            custom_supply_weight,
+            custom_supply_unit_measurement,
+            minimum_humidity_percentage,
+            maximum_humidity_percentage,
+            minimum_temperature_in_celsius,
+            maximum_temperature_in_celsius,
+        )
+
+        return self.device_threshold_repository.update(updated_threshold)

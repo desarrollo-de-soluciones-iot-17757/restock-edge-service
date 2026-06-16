@@ -13,14 +13,24 @@ Typical usage::
 from flask import Flask
 
 import iam.application.services
+from devices.interfaces.services import devices_api
 from iam.interfaces.services import iam_api
 from shared.infrastructure.database import init_db
 from tracking.interfaces.services import tracking_api
 
+# The Flask application instance.
 app = Flask(__name__)
+
+# Register the IAM bounded-context Blueprint.
 app.register_blueprint(iam_api)
+
+# Register the Tracking bounded-context Blueprint.
 app.register_blueprint(tracking_api)
 
+# Register the Devices bounded-context Blueprint.
+app.register_blueprint(devices_api)
+
+# Flag to track whether the database has been initialized.
 first_request = True
 
 
