@@ -1,8 +1,7 @@
 """Repository implementation for the Tracking bounded context.
 
-Provides the persistence adapter that maps between the
-:class:`~tracking.domain.entities.WeightRecord` domain entity and the
-:class:`~tracking.infrastructure.models.WeightRecord` Peewee ORM model.
+Provides the persistence adapter that maps between the: class:`~tracking.domain.entities.WeightRecord` domain entity and
+the: class:`~tracking.infrastructure.models.WeightRecord` Peewee ORM model.
 
 Following the Repository pattern, callers in the application layer interact
 only with domain entities and are shielded from ORM and database details.
@@ -15,7 +14,7 @@ class WeightRecordRepository:
     """Repository that persists and reconstructs WeightRecord entities.
 
     Acts as an in-process collection of domain entities backed by the local
-    SQLite database.  Mapping between ORM model and domain entity is handled
+    SQLite database.  Mapping between the ORM model and the domain entity is handled
     entirely within this class, keeping the domain layer free of infrastructure
     concerns.
     """
@@ -39,11 +38,11 @@ class WeightRecordRepository:
         record = WeightRecordModel.create(
             device_id=weight_record.device_id,
             weight=weight_record.weight,
-            created_at=weight_record.created_at,
         )
+
         return WeightRecord(
             weight_record.device_id,
             weight_record.weight,
-            weight_record.created_at,
+            record.created_at,
             record.id,
         )

@@ -1,10 +1,11 @@
 """Peewee ORM model for the Tracking bounded context.
 
-Defines the ``weight_records`` database table structure used to persist
-:class:`~tracking.domain.entities.WeightRecord` domain entities.  This module
+Defines the ``weight_records`` database table structure used to persist: class:`~tracking.domain.entities.WeightRecord` domain entities.  This module
 belongs to the infrastructure layer and must not be referenced directly from
 the domain or application layers; access is mediated through the repository.
 """
+from datetime import datetime, timezone
+
 from peewee import AutoField, CharField, DateTimeField, FloatField, Model
 
 from shared.infrastructure.database import db
@@ -14,7 +15,7 @@ class WeightRecord(Model):
     """ORM mapping for the ``weight_records`` table.
 
     Each row represents a single weight reading submitted by a registered
-    Restock smart scale device.
+    Restock Supply Keeper device.
 
     Attributes:
         id (AutoField): Auto-incrementing integer primary key assigned by the
@@ -22,14 +23,13 @@ class WeightRecord(Model):
         device_id (CharField): Device identifier that produced the reading.
             Stored as a plain string to keep bounded contexts loosely coupled.
         weight (FloatField): Weight measurement expressed in grams.
-        created_at (DateTimeField): UTC timestamp of when the device captured
-            the reading.
+        created_at (DateTimeField): UTC timestamp of when the device captured the reading.
     """
 
     id = AutoField()
-    device_id = CharField()
-    weight = FloatField()
-    created_at = DateTimeField()
+    device_id = CharField(null=False)
+    weight = FloatField(null=False)
+    created_at = DateTimeField(null=False, default=lambda: datetime.now(timezone.utc))
 
     class Meta:
         """Peewee metadata that binds the model to the shared database."""
