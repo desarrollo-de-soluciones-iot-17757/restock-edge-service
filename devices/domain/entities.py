@@ -4,6 +4,7 @@ class DeviceThreshold:
 
     Attributes:
         device_id (str): The unique id of the device
+        assigned_batch_id (str): The id of the batch assigned to the device
         custom_supply_weight (float): The custom supply weight for the device
         custom_supply_unit_measurement (str): The unit of measurement for the custom supply weight
         minimum_humidity_percentage (float): The minimum acceptable humidity percentage for the device
@@ -13,6 +14,7 @@ class DeviceThreshold:
     """
     def __init__(self,
                  device_id: str,
+                 assigned_batch_id: str,
                  custom_supply_weight: float,
                  custom_supply_unit_measurement: str,
                  minimum_humidity_percentage: float,
@@ -21,6 +23,7 @@ class DeviceThreshold:
                  maximum_temperature_in_celsius: float,
                  ):
         self.device_id = device_id
+        self.assigned_batch_id = assigned_batch_id
         self.custom_supply_weight = custom_supply_weight
         self.custom_supply_unit_measurement = custom_supply_unit_measurement
         self.minimum_humidity_percentage = minimum_humidity_percentage

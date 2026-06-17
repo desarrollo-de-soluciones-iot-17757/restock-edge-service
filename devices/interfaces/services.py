@@ -65,7 +65,7 @@ def create_threshold_for_device(device_id: str):
 @devices_api.route("/api/v1/devices/<device_id>/thresholds", methods=["PUT"])
 def update_threshold_for_device(device_id: str):
     """
-    Endpoint to update an existing device threshold.
+    Endpoint to update an existing device threshold or to assign a new batch to a device.
 
     :param device_id: The id of the device.
     :return: JSON response with a success message and HTTP status code.
@@ -78,6 +78,7 @@ def update_threshold_for_device(device_id: str):
     data = request.json
 
     try:
+        assigned_batch_id = data["assigned_batch_id"]
         custom_supply_weight = data["custom_supply_weight"]
         custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
@@ -87,6 +88,7 @@ def update_threshold_for_device(device_id: str):
 
         record = device_threshold_service.update_device_threshold(
             device_id,
+            assigned_batch_id,
             custom_supply_weight,
             custom_supply_unit_measurement,
             minimum_humidity_percentage,

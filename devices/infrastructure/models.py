@@ -10,6 +10,7 @@ class DeviceThresholdModel(Model):
     Attributes:
         id (AutoField): Auto-incrementing integer primary key assigned by the database on insert
         device_id (str): The unique id of the device
+        assigned_batch_id (str): The id of the batch assigned to the device
         custom_supply_weight (float): The custom supply weight of the device
         custom_supply_unit_measurement (str): The custom supply unit measurement of the device
         minimum_humidity_percentage (float): The minimum humidity percentage of the device
@@ -20,6 +21,7 @@ class DeviceThresholdModel(Model):
 
     id = AutoField(primary_key=True)
     device_id = CharField(unique=True, null=False)
+    assigned_batch_id = CharField(null=False)
     custom_supply_weight = FloatField(null=False)
     custom_supply_unit_measurement = CharField(null=False)
     minimum_humidity_percentage = FloatField(null=False)
