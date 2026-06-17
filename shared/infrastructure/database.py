@@ -24,7 +24,7 @@ def init_db() -> None:
 
     Imports ORM models from the IAM and Tracking bounded contexts at call time
     through deferred imports.  This avoids circular dependencies during module
-    loading and keeps table creation centralized in shared infrastructure.
+    loading and keeps table creation centralized in the shared infrastructure.
 
     This function is idempotent: calling it when the tables already exist is
     safe and has no side effects because ``safe=True`` suppresses create-table
@@ -34,6 +34,7 @@ def init_db() -> None:
         - Opens a connection to ``restock_edge.db`` when needed.
         - Creates the ``devices`` table if absent.
         - Creates the ``weight_records`` table if absent.
+        - Creates the ``device_thresholds`` table if absent.
         - Closes the connection after table creation.
     """
     should_close = db.is_closed()
@@ -42,8 +43,13 @@ def init_db() -> None:
 
     from iam.infrastructure.models import Device
     from tracking.infrastructure.models import WeightRecord
+    from devices.infrastructure.models import DeviceThresholdModel
 
-    db.create_tables([Device, WeightRecord], safe=True)
+    db.create_tables([
+        Device,
+        WeightRecord,
+        DeviceThresholdModel
+    ], safe=True)
 
     if should_close and not db.is_closed():
         db.close()
