@@ -37,7 +37,6 @@ def create_threshold_for_device(device_id: str):
 
     try:
         associated_batch_id = data["associated_batch_id"]
-        custom_supply_weight = data["custom_supply_weight"]
         custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
@@ -47,7 +46,6 @@ def create_threshold_for_device(device_id: str):
         record = device_threshold_service.create_device_threshold(
             device_id,
             associated_batch_id,
-            custom_supply_weight,
             custom_supply_unit_measurement,
             minimum_humidity_percentage,
             maximum_humidity_percentage,
@@ -81,7 +79,6 @@ def update_threshold_for_device(device_id: str):
 
     try:
         assigned_batch_id = data["assigned_batch_id"]
-        custom_supply_weight = data["custom_supply_weight"]
         custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
@@ -91,7 +88,6 @@ def update_threshold_for_device(device_id: str):
         record = device_threshold_service.update_device_threshold(
             device_id,
             assigned_batch_id,
-            custom_supply_weight,
             custom_supply_unit_measurement,
             minimum_humidity_percentage,
             maximum_humidity_percentage,
@@ -101,6 +97,38 @@ def update_threshold_for_device(device_id: str):
 
         return jsonify({
             "success": "Threshold updated successfully in edge service for device: " + record.device_id + ""
+        }), 200
+
+    except KeyError:
+        return jsonify({"error": "Missing required fields"}), 400
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+@devices_api.route("/api/v1/devices/<device_id>/calibrations", methods=["PUT"])
+def calibrate_custom_supply_weight_for_device(device_id: str):
+    """
+    Endpoint to calibrate the custom supply weight of a device.
+
+    :param device_id: The id of the device.
+    :return: JSON response with a success message and HTTP status code.
+    """
+
+    auth_result = authenticate_request()
+    if auth_result:
+        return auth_result
+
+    data = request.json
+
+    try:
+        custom_supply_weight = data["custom_supply_weight"]
+
+        record = device_threshold_service.calibrate_custom_supply_weight(
+            device_id,
+            custom_supply_weight,
+        )
+
+        return jsonify({
+            "success": "Custom supply weight calibrated successfully in edge service for device: " + record.device_id + ""
         }), 200
 
     except KeyError:
