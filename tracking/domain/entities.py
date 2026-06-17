@@ -17,24 +17,24 @@ class WeightRecord:
     validates the raw sensor data before constructing this entity.
 
     Attributes:
-        id (int | None): Surrogate identity assigned by the persistence layer
+        weight_record_id (int | None): Surrogate identity assigned by the persistence layer
             after the record is saved. ``None`` for transient instances.
         device_id (str): Identifier of the device that produced the reading.
         weight (float): Weight measurement expressed in grams.
         created_at (datetime): UTC timestamp of when the reading was captured.
     """
 
-    def __init__(self, device_id: str, weight: float, created_at: datetime, weig: int = None):
+    def __init__(self, device_id: str, weight: float, created_at: datetime, weight_record_id: int = None):
         """Initialize a WeightRecord entity.
 
         Args:
             device_id (str): Identifier of the originating device.
             weight (float): Weight measurement expressed in grams.
             created_at (datetime): UTC timestamp of the reading.
-            id (int, optional): Persistence identity. Defaults to ``None`` for
+            weight_record_id (int, optional): Persistence identity. Defaults to ``None`` for
                 transient entities that have not been saved yet.
         """
-        self.id = id
+        self.weight_record_id = weight_record_id
         self.device_id = device_id
         self.weight = weight
         self.created_at = created_at

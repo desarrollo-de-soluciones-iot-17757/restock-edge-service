@@ -2,7 +2,7 @@
 
 Domain services encapsulate business logic that does not naturally belong to a
 single entity.  ``WeightRecordService`` validates raw sensor input and creates a
-well-formed :class:`~tracking.domain.entities.WeightRecord` aggregate,
+well-formed: class:`~tracking.domain.entities.WeightRecord` aggregate,
 enforcing the invariants of the Tracking bounded context.
 """
 from datetime import datetime, timezone
@@ -43,7 +43,7 @@ class WeightRecordService:
             device_id (str): Identifier of the originating device.
             weight (float): Weight reading expressed in grams.
             created_at (str | None): ISO 8601 timestamp of the reading, for
-                example ``'2026-05-25T12:00:00-05:00'``; or ``None`` to use
+                example, ``'2026-05-25T12:00:00-05:00'``; or ``None`` to use
                 the current UTC time.
 
         Returns:
