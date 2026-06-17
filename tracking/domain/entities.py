@@ -24,7 +24,7 @@ class WeightRecord:
         created_at (datetime): UTC timestamp of when the reading was captured.
     """
 
-    def __init__(self, device_id: str, weight: float, created_at: datetime, id: int = None):
+    def __init__(self, device_id: str, weight: float, created_at: datetime, weig: int = None):
         """Initialize a WeightRecord entity.
 
         Args:

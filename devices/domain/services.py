@@ -39,6 +39,24 @@ class DeviceThresholdService:
             parsed_maximum_humidity_percentage = float(maximum_humidity_percentage)
             parsed_minimum_temperature_in_celsius = float(minimum_temperature_in_celsius)
             parsed_maximum_temperature_in_celsius = float(maximum_temperature_in_celsius)
+
+            if parsed_custom_supply_weight < 0:
+                raise ValueError("Custom supply weight must be greater than or equal to 0")
+
+            if parsed_minimum_humidity_percentage >= parsed_maximum_humidity_percentage:
+                raise ValueError("Minimum humidity percentage must be less than maximum humidity percentage")
+            if parsed_minimum_humidity_percentage < 0:
+                raise ValueError("Minimum humidity percentage must be greater than or equal to 0")
+            if parsed_maximum_humidity_percentage > 100:
+                raise ValueError("Maximum humidity percentage must be less than or equal to 100")
+
+            if parsed_minimum_temperature_in_celsius >= parsed_maximum_temperature_in_celsius:
+                raise ValueError("Minimum temperature must be less than maximum temperature")
+            if parsed_minimum_temperature_in_celsius < -273.15:
+                raise ValueError("Minimum temperature must be greater than or equal to -273.15")
+            if parsed_maximum_temperature_in_celsius > 100:
+                raise ValueError("Maximum temperature must be less than or equal to 100")
+
         except (ValueError, TypeError):
             raise ValueError("Invalid data format")
 

@@ -37,6 +37,7 @@ class DeviceThresholdRepository:
             maximum_humidity_percentage = record.maximum_humidity_percentage,
             minimum_temperature_in_celsius = record.minimum_temperature_in_celsius,
             maximum_temperature_in_celsius = record.maximum_temperature_in_celsius,
+            threshold_id = record.threshold_id,
         )
 
     @staticmethod
@@ -67,6 +68,7 @@ class DeviceThresholdRepository:
             maximum_humidity_percentage = record.maximum_humidity_percentage,
             minimum_temperature_in_celsius = record.minimum_temperature_in_celsius,
             maximum_temperature_in_celsius = record.maximum_temperature_in_celsius,
+            threshold_id = record.threshold_id,
         )
 
     @staticmethod
@@ -89,4 +91,5 @@ class DeviceThresholdRepository:
             maximum_humidity_percentage = record.maximum_humidity_percentage,
             minimum_temperature_in_celsius = record.minimum_temperature_in_celsius,
             maximum_temperature_in_celsius = record.maximum_temperature_in_celsius,
+            threshold_id = record.threshold_id,
         )

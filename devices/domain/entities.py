@@ -21,7 +21,9 @@ class DeviceThreshold:
                  maximum_humidity_percentage: float,
                  minimum_temperature_in_celsius: float,
                  maximum_temperature_in_celsius: float,
+                 threshold_id: int = None,
                  ):
+        self.threshold_id = threshold_id
         self.device_id = device_id
         self.assigned_batch_id = assigned_batch_id
         self.custom_supply_weight = custom_supply_weight
