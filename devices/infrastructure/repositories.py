@@ -72,7 +72,7 @@ class DeviceThresholdRepository:
         )
 
     @staticmethod
-    def get(device_id: int) -> DeviceThreshold:
+    def get(device_id: str) -> DeviceThreshold:
         """
         Retrieves a DeviceThreshold entity from the database by device_id.
 

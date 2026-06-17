@@ -37,12 +37,14 @@ class WeightRecordRepository:
         """
         record = WeightRecordModel.create(
             device_id=weight_record.device_id,
-            weight=weight_record.weight,
+            raw_weight=weight_record.raw_weight,
+            physical_stock=weight_record.physical_stock,
         )
 
         return WeightRecord(
             weight_record.device_id,
-            weight_record.weight,
+            weight_record.raw_weight,
+            weight_record.physical_stock,
             record.created_at,
             record.id,
         )

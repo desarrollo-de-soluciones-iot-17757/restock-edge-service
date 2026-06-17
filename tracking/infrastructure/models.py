@@ -22,13 +22,15 @@ class WeightRecord(Model):
             database on insert.
         device_id (CharField): Device identifier that produced the reading.
             Stored as a plain string to keep bounded contexts loosely coupled.
-        weight (FloatField): Weight measurement expressed in grams.
+        raw_weight (FloatField): Weight measurement expressed in grams.
+        physical_stock (FloatField): The physical stock of the device expressed in grams.
         created_at (DateTimeField): UTC timestamp of when the device captured the reading.
     """
 
     id = AutoField()
     device_id = CharField(null=False)
-    weight = FloatField(null=False)
+    raw_weight = FloatField(null=False)
+    physical_stock = FloatField(null=False)
     created_at = DateTimeField(null=False, default=lambda: datetime.now(timezone.utc))
 
     class Meta:

@@ -36,6 +36,7 @@ def create_threshold_for_device(device_id: str):
     data = request.json
 
     try:
+        associated_batch_id = data["associated_batch_id"]
         custom_supply_weight = data["custom_supply_weight"]
         custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
@@ -45,6 +46,7 @@ def create_threshold_for_device(device_id: str):
 
         record = device_threshold_service.create_device_threshold(
             device_id,
+            associated_batch_id,
             custom_supply_weight,
             custom_supply_unit_measurement,
             minimum_humidity_percentage,
