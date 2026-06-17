@@ -52,16 +52,14 @@ class WeightRecordApplicationService:
             raw_weight (float): Weight measurement expressed in grams.
 
         Returns:
-            WeightRecord: Persisted domain entity populated with its assigned
-            ``id``.
-
-        Raises:
-            ValueError: If no device matches the ``device_id`` / ``api_key``
-            combination, or if the domain service rejects the sensor values.
+            WeightRecord: Persisted domain entity populated with its assigned ``id``.
         """
         threshold = self.device_threshold_repository.get(device_id)
-
+        estimated_physical_stock = (self.weight_record_service
+                                    .calculate_physical_stock(raw_weight, threshold.custom_supply_weight))
         created_at = datetime.now(timezone.utc)
+        string_created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
 
-        record = self.weight_record_service.create_record(device_id, raw_weight, created_at)
+        record = (self.weight_record_service
+                  .create_record(device_id, raw_weight, estimated_physical_stock, string_created_at))
         return self.weight_record_repository.save(record)
