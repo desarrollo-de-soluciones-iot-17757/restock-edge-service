@@ -10,13 +10,14 @@ code selection.
 from flask import Blueprint, jsonify, request
 
 from devices.application.services import DeviceThresholdApplicationService
-from iam.interfaces.services import authenticate_request
+from iam.application.services import AuthApplicationService
 
 # This module defines the Flask Blueprint for device-related API endpoints and initializes
 devices_api = Blueprint("devices_api", __name__)
 
 # Module-level singleton; it contains no request-specific mutable state.
 device_threshold_service = DeviceThresholdApplicationService()
+auth_application_service = AuthApplicationService()
 
 @devices_api.route("/api/v1/devices/<device_id>/thresholds", methods=["POST"])
 def create_threshold_for_device(device_id: str):
@@ -29,15 +30,10 @@ def create_threshold_for_device(device_id: str):
     :except: KeyError if required fields are missing or ValueError if invalid data is provided.
     """
 
-    auth_result = authenticate_request()
-    if auth_result:
-        return auth_result
-
     data = request.json
 
     try:
-        custom_supply_weight = data["custom_supply_weight"]
-        custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
+        assigned_batch_id = data["assigned_batch_id"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
         minimum_temperature_in_celsius = data["minimum_temperature_in_celsius"]
@@ -45,13 +41,14 @@ def create_threshold_for_device(device_id: str):
 
         record = device_threshold_service.create_device_threshold(
             device_id,
-            custom_supply_weight,
-            custom_supply_unit_measurement,
+            assigned_batch_id,
+            None,
             minimum_humidity_percentage,
             maximum_humidity_percentage,
             minimum_temperature_in_celsius,
             maximum_temperature_in_celsius,
         )
+        auth_application_service.mark_device_configured(device_id)
 
         return jsonify({
             "success": "Threshold registered successfully in edge service for device: " + record.device_id + ""
@@ -71,15 +68,10 @@ def update_threshold_for_device(device_id: str):
     :return: JSON response with a success message and HTTP status code.
     """
 
-    auth_result = authenticate_request()
-    if auth_result:
-        return auth_result
-
     data = request.json
 
     try:
         assigned_batch_id = data["assigned_batch_id"]
-        custom_supply_weight = data["custom_supply_weight"]
         custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
@@ -89,13 +81,13 @@ def update_threshold_for_device(device_id: str):
         record = device_threshold_service.update_device_threshold(
             device_id,
             assigned_batch_id,
-            custom_supply_weight,
             custom_supply_unit_measurement,
             minimum_humidity_percentage,
             maximum_humidity_percentage,
             minimum_temperature_in_celsius,
             maximum_temperature_in_celsius,
         )
+        auth_application_service.mark_device_calibrated(device_id)
 
         return jsonify({
             "success": "Threshold updated successfully in edge service for device: " + record.device_id + ""

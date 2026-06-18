@@ -20,7 +20,6 @@ class DeviceThresholdRepository:
         record = DeviceThresholdModel.create(
             device_id = device_threshold.device_id,
             assigned_batch_id = device_threshold.assigned_batch_id,
-            custom_supply_weight = device_threshold.custom_supply_weight,
             custom_supply_unit_measurement = device_threshold.custom_supply_unit_measurement,
             minimum_humidity_percentage = device_threshold.minimum_humidity_percentage,
             maximum_humidity_percentage = device_threshold.maximum_humidity_percentage,
@@ -31,7 +30,6 @@ class DeviceThresholdRepository:
         return DeviceThreshold(
             device_id = record.device_id,
             assigned_batch_id = record.assigned_batch_id,
-            custom_supply_weight = record.custom_supply_weight,
             custom_supply_unit_measurement = record.custom_supply_unit_measurement,
             minimum_humidity_percentage = record.minimum_humidity_percentage,
             maximum_humidity_percentage = record.maximum_humidity_percentage,
@@ -49,19 +47,19 @@ class DeviceThresholdRepository:
         :return: A DeviceThreshold entity corresponding to the given device_threshold.
         """
 
-        record = DeviceThresholdModel.update(
-            custom_supply_weight = device_threshold.custom_supply_weight,
+        DeviceThresholdModel.update(
+            assigned_batch_id = device_threshold.assigned_batch_id,
             custom_supply_unit_measurement = device_threshold.custom_supply_unit_measurement,
             minimum_humidity_percentage = device_threshold.minimum_humidity_percentage,
             maximum_humidity_percentage = device_threshold.maximum_humidity_percentage,
             minimum_temperature_in_celsius = device_threshold.minimum_temperature_in_celsius,
             maximum_temperature_in_celsius = device_threshold.maximum_temperature_in_celsius,
         ).where(DeviceThresholdModel.device_id == device_threshold.device_id).execute()
+        record = DeviceThresholdModel.get(device_id=device_threshold.device_id)
 
         return DeviceThreshold(
             device_id = record.device_id,
             assigned_batch_id = record.assigned_batch_id,
-            custom_supply_weight = record.custom_supply_weight,
             custom_supply_unit_measurement = record.custom_supply_unit_measurement,
             minimum_humidity_percentage = record.minimum_humidity_percentage,
             maximum_humidity_percentage = record.maximum_humidity_percentage,
@@ -83,7 +81,6 @@ class DeviceThresholdRepository:
         return DeviceThreshold(
             device_id = record.device_id,
             assigned_batch_id = record.assigned_batch_id,
-            custom_supply_weight = record.custom_supply_weight,
             custom_supply_unit_measurement = record.custom_supply_unit_measurement,
             minimum_humidity_percentage = record.minimum_humidity_percentage,
             maximum_humidity_percentage = record.maximum_humidity_percentage,
