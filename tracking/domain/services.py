@@ -62,7 +62,11 @@ class WeightRecordService:
                 raise ValueError("Invalid weight value")
 
             if created_at:
-                parsed_created_at = parse(created_at).astimezone(timezone.utc)
+                parsed = parse(created_at)
+                if parsed.tzinfo is None:
+                    parsed_created_at = parsed.replace(tzinfo=timezone.utc)
+                else:
+                    parsed_created_at = parsed.astimezone(timezone.utc)
             else:
                 parsed_created_at = datetime.now(timezone.utc)
         except (ValueError, TypeError):
@@ -136,7 +140,11 @@ class EnvironmentRecordService:
                 raise ValueError("Invalid humidity value")
 
             if created_at:
-                parsed_created_at = parse(created_at).astimezone(timezone.utc)
+                parsed = parse(created_at)
+                if parsed.tzinfo is None:
+                    parsed_created_at = parsed.replace(tzinfo=timezone.utc)
+                else:
+                    parsed_created_at = parsed.astimezone(timezone.utc)
             else:
                 parsed_created_at = datetime.now(timezone.utc)
         except (ValueError, TypeError):

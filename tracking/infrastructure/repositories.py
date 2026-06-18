@@ -129,13 +129,18 @@ class EnvironmentRecordRepository:
             )
             .order_by(EnvironmentRecordModel.created_at.asc())
         )
-        return [
-            EnvironmentRecord(
-                record.device_id,
-                record.temperature,
-                record.humidity,
-                record.created_at,
-                record.id,
+        records = []
+        for record in query:
+            dt = record.created_at
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            records.append(
+                EnvironmentRecord(
+                    record.device_id,
+                    record.temperature,
+                    record.humidity,
+                    dt,
+                    record.id,
+                )
             )
-            for record in query
-        ]
+        return records
