@@ -13,20 +13,21 @@ from shared.infrastructure.database import db
 class Device(Model):
     """ORM mapping for the ``devices`` table.
 
-    Each row represents a registered Restock IoT device and its associated API
-    key, which is used to authenticate inbound telemetry requests.
+    Each row represents a registered Restock IoT device and the token assigned
+    by cloud.
 
     Attributes:
-        device_id (CharField): Natural primary key and human-readable hardware
-            identifier, for example ``'restock-scale-001'``.
-        api_key (CharField): Secret key paired with the device and checked on
-            authenticated API calls.
+        device_id (CharField): Device MAC address used as the primary key.
+        device_token (CharField): Secret token paired with the device and
+            checked on authenticated API calls.
+        status (CharField): Device lifecycle status.
         created_at (DateTimeField): UTC timestamp recording when the device was
             registered in the local edge database.
     """
 
     device_id = CharField(primary_key=True)
-    api_key = CharField()
+    device_token = CharField(unique=True)
+    status = CharField(default="REGISTERED")
     created_at = DateTimeField()
 
     class Meta:

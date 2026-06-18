@@ -2,7 +2,7 @@
 
 This module wires together the Flask application, registers the IAM and
 Tracking bounded-context Blueprints, and ensures the SQLite database is
-initialized exactly once before the first HTTP request is handled.
+initialized when the application starts.
 
 Typical usage::
 
@@ -30,32 +30,23 @@ app.register_blueprint(tracking_api)
 # The Devices bounded-context Blueprint is registered last, as it may depend on authentication and tracking logic provided by the previously registered Blueprints.  This ordering ensures that all necessary services are available when handling device-related API requests.
 app.register_blueprint(devices_api)
 
-# Flag to track whether the database has been initialized.
-first_request = True
-
-
-@app.before_request
 def setup():
-    """Initialize the database and seed a test device on the first request.
-
-    Uses a module-level flag (``first_request``) to ensure this one-time setup
-    runs only once for the lifetime of the process.  Subsequent requests bypass
-    this function entirely.
+    """Initialize the database and seed a test device.
 
     Side effects:
         - Creates the SQLite database file (``restock_edge.db``) if absent.
         - Creates ``devices`` and ``weight_records`` tables when they do not
           exist yet.
-        - Inserts the default test device (``restock-scale-001``) if it has not
-          been created previously.
+        - Inserts the default test device if it has not been created previously.
     """
-    global first_request
-    if first_request:
-        first_request = False
-        init_db()
-        auth_application_service = iam.application.services.AuthApplicationService()
-        auth_application_service.get_or_create_test_device()
+    init_db()
+    auth_application_service = iam.application.services.AuthApplicationService()
+    auth_application_service.get_or_create_test_device()
+
+
+setup()
 
 
 if __name__ == "__main__":
+    print(app.url_map)
     app.run(debug=True)
