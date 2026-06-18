@@ -57,7 +57,7 @@ def authenticate_request():
     return None
 
 
-@iam_api.route("/api/v1/iam/devices", methods=["POST"])
+@iam_api.route("/api/v1/auth/sign-up", methods=["POST"])
 def register_device():
     """Register a new IoT device for the local edge service.
 
