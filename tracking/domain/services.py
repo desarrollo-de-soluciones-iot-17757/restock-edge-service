@@ -93,31 +93,17 @@ class WeightRecordService:
         return calculated_physical_stock
 
     @classmethod
-    def create_record(cls, device_id: str, weight: float, created_at: str | None) -> WeightRecord:
+    def create_record(cls, device_id: str, weight: float, physical_stock: float, created_at: str | None) -> WeightRecord:
         """Validate raw sensor data and create a new WeightRecord entity.
 
         Applies domain invariants before constructing the aggregate:
 
-        * ``weight`` is coerced to ``float`` and validated in the range
-          [0, 20000].
-        * ``created_at`` is parsed and converted to UTC; when ``None``, the
-          current UTC timestamp is used.
+        * ``weight`` is coerced to ``float`` and validated in the range [0, 20000] grams.
+        * ``created_at`` is parsed and converted to UTC; when ``None``, the current UTC timestamp is used.
+        * ``physical_stock`` is calculated based on the raw weight and custom supply weight.
+        * ``device_id`` is validated.
 
-        Args:
-            device_id (str): Identifier of the originating device.
-            weight (float): Weight reading expressed in grams.
-            created_at (str | None): ISO 8601 timestamp of the reading, for
-                example ``'2026-05-25T12:00:00-05:00'``; or ``None`` to use
-                the current UTC time.
-
-        Returns:
-            WeightRecord: New unsaved domain entity with a UTC-normalized
-            ``created_at`` value.
-
-        Raises:
-            ValueError: If ``weight`` is not convertible to ``float``, falls
-            outside the allowed range, or if ``created_at`` is not valid ISO
-            8601.
+        :return: New unsaved domain entity with a UTC-normalized ``created_at`` value.
         """
         try:
             parsed_weight = float(weight)
@@ -135,7 +121,7 @@ class WeightRecordService:
         except (ValueError, TypeError):
             raise ValueError("Invalid data format")
 
-        return WeightRecord(device_id, 1.0, parsed_weight, parsed_created_at)
+        return WeightRecord(device_id, parsed_weight, physical_stock, parsed_created_at)
 
     @classmethod
     def calculate_averages(cls, records: list) -> dict:

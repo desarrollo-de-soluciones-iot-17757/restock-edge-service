@@ -44,7 +44,7 @@ class EnvironmentRecordModel(Model):
     """ORM mapping for the ``environment_records`` table.
 
     Each row represents a single environment reading (temperature and humidity)
-    submitted by a registered Restock smart scale device.
+    submitted by a registered Restock Supply Keeper device.
 
     Attributes:
         id (AutoField): Auto-incrementing integer primary key assigned by the
