@@ -10,6 +10,7 @@ class DeviceThresholdService:
     def create_threshold_for_device(cls,
                          device_id: str,
                          assigned_batch_id: str,
+                         custom_supply_weight: float | None,
                          custom_supply_unit_measurement: str | None,
                          minimum_humidity_percentage: float,
                          maximum_humidity_percentage: float,
@@ -21,6 +22,7 @@ class DeviceThresholdService:
 
         :param device_id: The device id of the device
         :param assigned_batch_id: The assigned batch id of the device
+        :param custom_supply_weight: The custom supply weight of the device
         :param custom_supply_unit_measurement: The unit measurement of the device
         :param minimum_humidity_percentage: The minimum humidity percentage of the device
         :param maximum_humidity_percentage: The maximum humidity percentage of the device
@@ -35,6 +37,13 @@ class DeviceThresholdService:
                 if custom_supply_unit_measurement is not None
                 else None
             )
+
+            parsed_custom_supply_weight = (
+                float(custom_supply_weight)
+                if custom_supply_weight is not None
+                else None
+            )
+
             parsed_assigned_batch_id = str(assigned_batch_id)
             parsed_minimum_humidity_percentage = float(minimum_humidity_percentage)
             parsed_maximum_humidity_percentage = float(maximum_humidity_percentage)
@@ -46,6 +55,7 @@ class DeviceThresholdService:
         return DeviceThreshold(
             device_id=device_id,
             assigned_batch_id=parsed_assigned_batch_id,
+            custom_supply_weight=parsed_custom_supply_weight,
             custom_supply_unit_measurement=parsed_custom_supply_unit_measurement,
             minimum_humidity_percentage=parsed_minimum_humidity_percentage,
             maximum_humidity_percentage=parsed_maximum_humidity_percentage,
