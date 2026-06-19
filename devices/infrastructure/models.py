@@ -8,7 +8,7 @@ class DeviceThresholdModel(Model):
     ORM mapping for the ``device_thresholds`` table.
 
     Attributes:
-        id (AutoField): Auto-incrementing integer primary key assigned by the database on insert
+        threshold_id (AutoField): Auto-incrementing integer primary key assigned by the database on insert
         device_id (str): The unique id of the device
         assigned_batch_id (str): The id of the batch assigned to the device
         custom_supply_unit_measurement (str | None): The custom supply unit measurement of the device
@@ -18,9 +18,10 @@ class DeviceThresholdModel(Model):
         maximum_temperature_in_celsius (float): The maximum temperature in Celsius of the device
     """
 
-    id = AutoField(primary_key=True)
+    threshold_id = AutoField(primary_key=True)
     device_id = CharField(unique=True, null=False)
     assigned_batch_id = CharField(null=False)
+    custom_supply_weight = FloatField(null=True)
     custom_supply_unit_measurement = CharField(null=True)
     minimum_humidity_percentage = FloatField(null=False)
     maximum_humidity_percentage = FloatField(null=False)
