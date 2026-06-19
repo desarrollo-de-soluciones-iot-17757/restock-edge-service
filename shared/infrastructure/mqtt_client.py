@@ -94,7 +94,7 @@ class MQTTClient:
         """
 
         self.host = os.getenv('MQTT_HOST')
-        self.port = int(os.getenv('MQTT_PORT'))
+        self.port = int(os.getenv('MQTT_PORT', '1883').strip(''))
         self.connected = False
         self.client = mqtt_client.Client(
             client_id=os.getenv('MQTT_CLIENT_ID'),
@@ -150,12 +150,18 @@ mqtt_service = MQTTClient()
 
 def init_mqtt_client():
     """ Initializes the MQTT client."""
+    if os.getenv('USE_MQTT') != 'true':
+        return
+
     mqtt_service.connect()
     logging.info("MQTT Client Initialized")
 
 
 def shutdown_mqtt_client():
     """ Shuts down the MQTT client. """
+    if os.getenv('USE_MQTT') != 'true':
+        return
+
     mqtt_service.client.disconnect()
     mqtt_service.client.loop_stop()
     mqtt_service.connected = False
