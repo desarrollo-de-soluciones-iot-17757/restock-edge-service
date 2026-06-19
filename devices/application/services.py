@@ -1,6 +1,7 @@
 from devices.domain.entities import DeviceThreshold
 from devices.domain.services import DeviceThresholdService
 from devices.infrastructure.repositories import DeviceThresholdRepository
+from iam.infrastructure.repositories import DeviceRepository
 
 
 class DeviceThresholdApplicationService:
@@ -16,6 +17,7 @@ class DeviceThresholdApplicationService:
         """ Initialize the device threshold application service. """
         self.device_threshold_repository = DeviceThresholdRepository()
         self.device_threshold_service = DeviceThresholdService()
+        self.device_repository = DeviceRepository()
 
     def create_device_threshold(
         self,
@@ -53,6 +55,24 @@ class DeviceThresholdApplicationService:
 
         return self.device_threshold_repository.save(record)
 
+    def calibrate_custom_supply_weight(
+            self,
+            device_id: str,
+            custom_supply_weight: float,
+    ) -> DeviceThreshold:
+        """
+        Calibrate the custom supply weight of a device.
+
+        :param device_id: The id of the device.
+        :param custom_supply_weight: The new custom supply weight to be calibrated for the device.
+        :return: The updated device threshold record with the new custom supply weight.
+        """
+
+        return self.device_threshold_repository.calibrate_custom_supply_weight(
+            device_id,
+            custom_supply_weight
+        )
+
     def update_device_threshold(
             self,
             device_id: str,
@@ -78,14 +98,18 @@ class DeviceThresholdApplicationService:
         :return: The updated device threshold record.
         """
 
+        record = self.device_threshold_repository.get_by_device_id(device_id)
+
         updated_threshold = self.device_threshold_service.create_threshold_for_device(
-            device_id,
-            assigned_batch_id,
-            custom_supply_unit_measurement,
-            minimum_humidity_percentage,
-            maximum_humidity_percentage,
-            minimum_temperature_in_celsius,
-            maximum_temperature_in_celsius,
+            threshold_id=record.threshold_id,
+            device_id=device_id,
+            assigned_batch_id=assigned_batch_id,
+            custom_supply_weight=record.custom_supply_weight,
+            custom_supply_unit_measurement=custom_supply_unit_measurement,
+            minimum_humidity_percentage=minimum_humidity_percentage,
+            maximum_humidity_percentage=maximum_humidity_percentage,
+            minimum_temperature_in_celsius=minimum_temperature_in_celsius,
+            maximum_temperature_in_celsius=maximum_temperature_in_celsius,
         )
 
         return self.device_threshold_repository.update(updated_threshold)

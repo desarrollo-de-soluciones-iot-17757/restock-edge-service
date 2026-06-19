@@ -63,7 +63,6 @@ def create_weight_record():
             device_id,
             weight,
             created_at,
-            request.headers.get("X-API-Key"),
         )
         return jsonify({
             "id": record.id,
@@ -125,7 +124,6 @@ def create_environment_record():
             temperature,
             humidity,
             created_at,
-            request.headers.get("X-API-Key"),
         )
         return jsonify({
             "id": record.id,

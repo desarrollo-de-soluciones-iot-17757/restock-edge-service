@@ -1,8 +1,7 @@
 """Repository implementation for the Tracking bounded context.
 
-Provides the persistence adapter that maps between the
-:class:`~tracking.domain.entities.WeightRecord` domain entity and the
-:class:`~tracking.infrastructure.models.WeightRecord` Peewee ORM model.
+Provides the persistence adapter that maps between the: class:`~tracking.domain.entities.WeightRecord` domain entity and
+the: class:`~tracking.infrastructure.models.WeightRecord` Peewee ORM model.
 
 Following the Repository pattern, callers in the application layer interact
 only with domain entities and are shielded from ORM and database details.
@@ -19,10 +18,12 @@ class WeightRecordRepository:
     """Repository that persists and reconstructs WeightRecord entities.
 
     Acts as an in-process collection of domain entities backed by the local
-    SQLite database.  Mapping between ORM model and domain entity is handled
+    SQLite database.  Mapping between the ORM model and the domain entity is handled
     entirely within this class, keeping the domain layer free of infrastructure
     concerns.
     """
+
+    DEFAULT_INTERVAL_MINUTES = 60
 
     @staticmethod
     def save(weight_record: WeightRecord) -> WeightRecord:
@@ -42,22 +43,74 @@ class WeightRecordRepository:
         """
         record = WeightRecordModel.create(
             device_id=weight_record.device_id,
-            weight=weight_record.weight,
-            created_at=weight_record.created_at,
+            raw_weight=weight_record.raw_weight,
+            physical_stock=weight_record.physical_stock,
         )
+
         return WeightRecord(
             weight_record.device_id,
-            weight_record.weight,
-            weight_record.created_at,
+            weight_record.raw_weight,
+            weight_record.physical_stock,
+            record.created_at,
             record.id,
         )
+
+    @classmethod
+    def find_by_device_in_interval(
+            cls, device_id: str, interval_minutes: int = None
+    ) -> list:
+        """Retrieve weight records for a device within a time interval.
+
+        Queries the ``weight_records`` table for all rows belonging to
+        the given ``device_id`` whose ``created_at`` timestamp falls within
+        the last ``interval_minutes`` minutes relative to the current UTC
+        time.
+
+        Args:
+            device_id (str): Identifier of the device to query.
+            interval_minutes (int, optional): Size of the look-back window in
+                minutes. Defaults to
+                :attr:`DEFAULT_INTERVAL_MINUTES` (60).
+
+        Returns:
+            list[WeightRecord]: Domain entities reconstructed from
+            matching database rows, ordered by ``created_at`` ascending.
+        """
+        if interval_minutes is None:
+            interval_minutes = cls.DEFAULT_INTERVAL_MINUTES
+
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=interval_minutes)
+        query = (
+            WeightRecordModel
+            .select()
+            .where(
+                (WeightRecordModel.device_id == device_id)
+                & (WeightRecordModel.created_at >= cutoff)
+            )
+            .order_by(WeightRecordModel.created_at.asc())
+        )
+        records = []
+        for record in query:
+            dt = record.created_at
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            records.append(
+                WeightRecord(
+                    record.device_id,
+                    record.raw_weight,
+                    record.physical_stock,
+                    dt,
+                    record.id,
+                )
+            )
+        return records
 
 
 class EnvironmentRecordRepository:
     """Repository that persists and reconstructs EnvironmentRecord entities.
 
     Acts as an in-process collection of domain entities backed by the local
-    SQLite database.  Mapping between ORM model and domain entity is handled
+    SQLite database.  Mapping between ORM model and the domain entity is handled
     entirely within this class, keeping the domain layer free of infrastructure
     concerns.
     """
@@ -66,7 +119,7 @@ class EnvironmentRecordRepository:
 
     @staticmethod
     def save(environment_record: EnvironmentRecord) -> EnvironmentRecord:
-        """Persist a transient EnvironmentRecord entity.
+        """Persists a transient EnvironmentRecord entity.
 
         Inserts a new row into the ``environment_records`` table using Peewee's
         ``create`` helper and returns a new domain entity instance populated
