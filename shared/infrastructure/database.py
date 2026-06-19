@@ -43,11 +43,13 @@ def init_db() -> None:
 
     from iam.infrastructure.models import Device
     from tracking.infrastructure.models import WeightRecord
+    from tracking.infrastructure.models import EnvironmentRecordModel
     from devices.infrastructure.models import DeviceThresholdModel
 
     db.create_tables([
         Device,
         WeightRecord,
+        EnvironmentRecordModel,
         DeviceThresholdModel
     ], safe=True)
 

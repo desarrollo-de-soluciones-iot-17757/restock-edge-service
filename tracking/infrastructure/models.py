@@ -38,3 +38,35 @@ class WeightRecord(Model):
 
         database = db
         table_name = "weight_records"
+
+
+class EnvironmentRecordModel(Model):
+    """ORM mapping for the ``environment_records`` table.
+
+    Each row represents a single environment reading (temperature and humidity)
+    submitted by a registered Restock smart scale device.
+
+    Attributes:
+        id (AutoField): Auto-incrementing integer primary key assigned by the
+            database on insert.
+        device_id (CharField): Device identifier that produced the reading.
+            Stored as a plain string to keep bounded contexts loosely coupled.
+        temperature (FloatField): Temperature measurement expressed in degrees
+            Celsius.
+        humidity (FloatField): Relative humidity measurement expressed as a
+            percentage.
+        created_at (DateTimeField): UTC timestamp of when the device captured
+            the reading.
+    """
+
+    id = AutoField()
+    device_id = CharField()
+    temperature = FloatField()
+    humidity = FloatField()
+    created_at = DateTimeField()
+
+    class Meta:
+        """Peewee metadata that binds the model to the shared database."""
+
+        database = db
+        table_name = "environment_records"

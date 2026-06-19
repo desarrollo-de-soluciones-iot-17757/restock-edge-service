@@ -3,11 +3,12 @@
 Domain services express business behavior that does not fit naturally inside a
 single entity.  ``AuthService`` encapsulates the authentication invariant for
 Restock IoT devices: a device is considered authenticated when the device
-registry returns a matching ``device_id`` and ``api_key`` pair.
+registry returns a matching MAC-address ``device_id`` and ``device_token`` pair
+in ``CALIBRATED`` status.
 """
 from typing import Optional
 
-from iam.domain.entities import Device
+from iam.domain.entities import Device, DeviceStatus
 
 
 class AuthService:
@@ -29,4 +30,4 @@ class AuthService:
         Returns:
             bool: ``True`` if ``device`` is not ``None``; otherwise ``False``.
         """
-        return device is not None
+        return device is not None and device.status == DeviceStatus.CALIBRATED

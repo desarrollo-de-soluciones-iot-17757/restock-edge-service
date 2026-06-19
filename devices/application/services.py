@@ -21,7 +21,7 @@ class DeviceThresholdApplicationService:
         self,
         device_id: str,
         assigned_batch_id: str,
-        custom_supply_unit_measurement: str,
+        custom_supply_unit_measurement: str | None,
         minimum_humidity_percentage: float,
         maximum_humidity_percentage: float,
         minimum_temperature_in_celsius: float,
@@ -29,8 +29,6 @@ class DeviceThresholdApplicationService:
     ) -> DeviceThreshold:
         """
         Create a new device threshold record.
-        For the initial configuration, the custom supply weight won't be needed.
-        It will be registered after, when the calibration process is done.
 
         :param device_id: The id of the device.
         :param assigned_batch_id: The id of the assigned batch.
@@ -55,30 +53,11 @@ class DeviceThresholdApplicationService:
 
         return self.device_threshold_repository.save(record)
 
-    def calibrate_custom_supply_weight(
-            self,
-            device_id: str,
-            custom_supply_weight: float,
-    ) -> DeviceThreshold:
-        """
-        Calibrate the custom supply weight of a device.
-
-        :param device_id: The id of the device.
-        :param custom_supply_weight: The custom supply weight.
-        :return: The updated device threshold record.
-        """
-
-        device_threshold = self.device_threshold_repository.get(device_id)
-        calibrated_device = (self.device_threshold_service
-                             .calibrate_custom_supply_weight(device_threshold, custom_supply_weight))
-
-        return self.device_threshold_repository.update(calibrated_device)
-
     def update_device_threshold(
             self,
             device_id: str,
             assigned_batch_id: str,
-            custom_supply_unit_measurement: str,
+            custom_supply_unit_measurement: str | None,
             minimum_humidity_percentage: float,
             maximum_humidity_percentage: float,
             minimum_temperature_in_celsius: float,
