@@ -10,16 +10,18 @@ class DeviceThresholdService:
     def create_threshold_for_device(cls,
                          device_id: str,
                          assigned_batch_id: str,
-                         custom_supply_weight: float | None,
                          custom_supply_unit_measurement: str | None,
                          minimum_humidity_percentage: float,
                          maximum_humidity_percentage: float,
                          minimum_temperature_in_celsius: float,
                          maximum_temperature_in_celsius: float,
+                         threshold_id: int = 0,
+                         custom_supply_weight: float = 1.0,
                          ) -> DeviceThreshold:
         """
         Method to create a DeviceThreshold entity with validated data.
 
+        :param threshold_id: The id of the device threshold
         :param device_id: The device id of the device
         :param assigned_batch_id: The assigned batch id of the device
         :param custom_supply_weight: The custom supply weight of the device
@@ -53,6 +55,7 @@ class DeviceThresholdService:
             raise ValueError("Invalid data format")
 
         return DeviceThreshold(
+            threshold_id=threshold_id,
             device_id=device_id,
             assigned_batch_id=parsed_assigned_batch_id,
             custom_supply_weight=parsed_custom_supply_weight,

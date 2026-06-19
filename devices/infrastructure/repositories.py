@@ -112,8 +112,10 @@ class DeviceThresholdRepository:
         record = DeviceThresholdModel.get(device_id=device_id)
 
         return DeviceThreshold(
+            threshold_id = record.threshold_id,
             device_id = record.device_id,
             assigned_batch_id = record.assigned_batch_id,
+            custom_supply_weight = record.custom_supply_weight,
             custom_supply_unit_measurement = record.custom_supply_unit_measurement,
             minimum_humidity_percentage = record.minimum_humidity_percentage,
             maximum_humidity_percentage = record.maximum_humidity_percentage,
