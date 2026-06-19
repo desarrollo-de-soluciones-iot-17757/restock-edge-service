@@ -28,6 +28,69 @@ class WeightRecordService:
 
     MIN_WEIGHT_GRAMS = 0.0
     MAX_WEIGHT_GRAMS = 20000.0
+    ABSOLUTE_TOLERANCE_GRAMS = 3.0
+    RELATIVE_TOLERANCE_PERCENTAGE = 0.05
+    MAXIMUM_DIFFERENCE_GRAMS = 10.0
+
+    @classmethod
+    def calculate_physical_stock(cls, raw_weight: float, custom_supply_weight: float) -> int | float:
+        """
+        Algorithm to calculate the physical stock based on the raw weight and custom supply weight.
+
+        This uses a combination of absolute and relative tolerances to determine the permitted weight difference.
+
+        :param raw_weight: The raw weight of the product.
+        :param custom_supply_weight: The custom supply weight of the product.
+        :return: Either the calculated physical stock or the nearest stock if the residual weight is within the permitted weight difference.
+        """
+
+        try:
+            parsed_raw_weight = float(raw_weight)
+            if not (cls.MIN_WEIGHT_GRAMS <= parsed_raw_weight <= cls.MAX_WEIGHT_GRAMS):
+                raise ValueError("Invalid weight value")
+
+            parsed_custom_supply_weight = float(custom_supply_weight)
+            if not (cls.MIN_WEIGHT_GRAMS <= parsed_custom_supply_weight <= cls.MAX_WEIGHT_GRAMS):
+                raise ValueError("Invalid custom supply weight value")
+        except (ValueError, TypeError):
+            raise ValueError("Invalid data format")
+
+        # Calculate the physical stock based on the raw weight and custom supply weight
+        calculated_physical_stock = parsed_raw_weight / parsed_custom_supply_weight
+
+        # If the calculated physical stock is out of range, raise an error
+        if calculated_physical_stock <= 0.0:
+            raise ValueError(f"Calculated physical stock is out of range: {calculated_physical_stock}")
+
+        # Determine the permitted difference between the maximum difference and the maximum between the absolute and relative tolerances
+        permitted_difference = min(
+            cls.MAXIMUM_DIFFERENCE_GRAMS,
+            max(
+                cls.ABSOLUTE_TOLERANCE_GRAMS,
+                custom_supply_weight * cls.RELATIVE_TOLERANCE_PERCENTAGE
+            )
+        )
+
+        # Round the calculated physical stock to the nearest integer and compare it to the raw weight
+        nearest_stock = round(calculated_physical_stock)
+
+        # Calculate the expected weight based on the nearest stock and custom supply weight
+        expected_weight = nearest_stock * custom_supply_weight
+
+        # Calculate the residual weight between the raw weight and the expected weight
+        residual_weight = abs(raw_weight - expected_weight)
+
+        # Calculate the permitted weight difference based on the custom supply weight and the permitted difference
+        permitted_weight_difference = custom_supply_weight * permitted_difference
+
+        # Evaluate the residual weight against the permitted weight difference
+        if residual_weight <= permitted_weight_difference:
+
+            # If the residual weight is within the permitted weight difference, return the nearest stock
+            return nearest_stock
+
+        # If the residual weight exceeds the permitted weight difference, return the original calculated physical stock
+        return calculated_physical_stock
 
     @classmethod
     def create_record(cls, device_id: str, weight: float, created_at: str | None) -> WeightRecord:
@@ -72,7 +135,31 @@ class WeightRecordService:
         except (ValueError, TypeError):
             raise ValueError("Invalid data format")
 
-        return WeightRecord(device_id, parsed_weight, parsed_created_at)
+        return WeightRecord(device_id, 1.0, parsed_weight, parsed_created_at)
+
+    @classmethod
+    def calculate_averages(cls, records: list) -> dict:
+        """Calculates the average of physical stock.
+
+        Given a list of :class:`~tracking.domain.entities.WeightRecord`
+        instances, returns the mean of physical stock values.
+
+        Args:
+            records (list[WeightRecord]): Collection of weight records to aggregate.
+
+        Returns:
+            dict: Dictionary with ``average_physical_stock`` as a key holding a ``float`` rounded to two
+            decimal places.  Returns ``0.0`` if ``record`` is empty.
+        """
+        if not records:
+            return {"average_physical_stock": 0.0}
+
+        total_physical_stock = sum(r.physical_stock for r in records)
+        count = len(records)
+
+        return {
+            "average_physical_stock": round(total_physical_stock / count, 2),
+        }
 
 
 class EnvironmentRecordService:
