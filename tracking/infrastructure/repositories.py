@@ -7,7 +7,11 @@ Provides the persistence adapter that maps between the
 Following the Repository pattern, callers in the application layer interact
 only with domain entities and are shielded from ORM and database details.
 """
+from datetime import datetime, timedelta, timezone
+
+from tracking.domain.entities import EnvironmentRecord
 from tracking.domain.entities import WeightRecord
+from tracking.infrastructure.models import EnvironmentRecordModel
 from tracking.infrastructure.models import WeightRecord as WeightRecordModel
 
 
@@ -47,3 +51,96 @@ class WeightRecordRepository:
             weight_record.created_at,
             record.id,
         )
+
+
+class EnvironmentRecordRepository:
+    """Repository that persists and reconstructs EnvironmentRecord entities.
+
+    Acts as an in-process collection of domain entities backed by the local
+    SQLite database.  Mapping between ORM model and domain entity is handled
+    entirely within this class, keeping the domain layer free of infrastructure
+    concerns.
+    """
+
+    DEFAULT_INTERVAL_MINUTES = 60
+
+    @staticmethod
+    def save(environment_record: EnvironmentRecord) -> EnvironmentRecord:
+        """Persist a transient EnvironmentRecord entity.
+
+        Inserts a new row into the ``environment_records`` table using Peewee's
+        ``create`` helper and returns a new domain entity instance populated
+        with the database-assigned ``id``.
+
+        Args:
+            environment_record (EnvironmentRecord): Transient entity to
+                persist. Its ``id`` attribute is expected to be ``None`` at
+                this point.
+
+        Returns:
+            EnvironmentRecord: Copy of the input entity enriched with the
+            assigned database ``id``.
+        """
+        record = EnvironmentRecordModel.create(
+            device_id=environment_record.device_id,
+            temperature=environment_record.temperature,
+            humidity=environment_record.humidity,
+            created_at=environment_record.created_at,
+        )
+        return EnvironmentRecord(
+            environment_record.device_id,
+            environment_record.temperature,
+            environment_record.humidity,
+            environment_record.created_at,
+            record.id,
+        )
+
+    @classmethod
+    def find_by_device_in_interval(
+        cls, device_id: str, interval_minutes: int = None
+    ) -> list:
+        """Retrieve environment records for a device within a time interval.
+
+        Queries the ``environment_records`` table for all rows belonging to
+        the given ``device_id`` whose ``created_at`` timestamp falls within
+        the last ``interval_minutes`` minutes relative to the current UTC
+        time.
+
+        Args:
+            device_id (str): Identifier of the device to query.
+            interval_minutes (int, optional): Size of the look-back window in
+                minutes. Defaults to
+                :attr:`DEFAULT_INTERVAL_MINUTES` (60).
+
+        Returns:
+            list[EnvironmentRecord]: Domain entities reconstructed from
+            matching database rows, ordered by ``created_at`` ascending.
+        """
+        if interval_minutes is None:
+            interval_minutes = cls.DEFAULT_INTERVAL_MINUTES
+
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=interval_minutes)
+        query = (
+            EnvironmentRecordModel
+            .select()
+            .where(
+                (EnvironmentRecordModel.device_id == device_id)
+                & (EnvironmentRecordModel.created_at >= cutoff)
+            )
+            .order_by(EnvironmentRecordModel.created_at.asc())
+        )
+        records = []
+        for record in query:
+            dt = record.created_at
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            records.append(
+                EnvironmentRecord(
+                    record.device_id,
+                    record.temperature,
+                    record.humidity,
+                    dt,
+                    record.id,
+                )
+            )
+        return records
