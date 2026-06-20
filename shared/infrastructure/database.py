@@ -53,5 +53,24 @@ def init_db() -> None:
         DeviceThresholdModel
     ], safe=True)
 
+    _ensure_environment_anomaly_columns()
+
     if should_close and not db.is_closed():
         db.close()
+
+
+def _ensure_environment_anomaly_columns() -> None:
+    """Add anomaly flags to existing local environment records."""
+    existing_columns = {
+        row[1] for row in db.execute_sql("PRAGMA table_info(environment_records)")
+    }
+    anomaly_columns = {
+        "temperature_is_anomaly": "INTEGER NOT NULL DEFAULT 0",
+        "humidity_is_anomaly": "INTEGER NOT NULL DEFAULT 0",
+    }
+
+    for column_name, column_definition in anomaly_columns.items():
+        if column_name not in existing_columns:
+            db.execute_sql(
+                f"ALTER TABLE environment_records ADD COLUMN {column_name} {column_definition}"
+            )
