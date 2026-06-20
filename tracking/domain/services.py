@@ -170,9 +170,15 @@ class EnvironmentRecordService:
     MAX_HUMIDITY_PERCENTAGE = 100.0
 
     @classmethod
-    def create_record(cls, device_id: str, temperature: float,
-                      humidity: float,
-                      created_at: str | None) -> EnvironmentRecord:
+    def create_record(
+            cls,
+            device_id: str,
+            temperature: float,
+            humidity: float,
+            created_at: str | None,
+            temperature_is_anomaly: bool = False,
+            humidity_is_anomaly: bool = False,
+    ) -> EnvironmentRecord:
         """Validate raw sensor data and create a new EnvironmentRecord entity.
 
         Applies domain invariants before constructing the aggregate:
@@ -224,7 +230,9 @@ class EnvironmentRecordService:
             raise ValueError("Invalid data format")
 
         return EnvironmentRecord(device_id, parsed_temperature,
-                                 parsed_humidity, parsed_created_at)
+                                 parsed_humidity, parsed_created_at,
+                                 temperature_is_anomaly=temperature_is_anomaly,
+                                 humidity_is_anomaly=humidity_is_anomaly)
 
     @classmethod
     def calculate_averages(cls, records: list) -> dict:

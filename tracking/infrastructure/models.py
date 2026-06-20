@@ -6,7 +6,7 @@ the domain or application layers; access is mediated through the repository.
 """
 from datetime import datetime, timezone
 
-from peewee import AutoField, CharField, DateTimeField, FloatField, Model
+from peewee import AutoField, BooleanField, CharField, DateTimeField, FloatField, Model
 
 from shared.infrastructure.database import db
 
@@ -63,6 +63,8 @@ class EnvironmentRecordModel(Model):
     device_id = CharField()
     temperature = FloatField()
     humidity = FloatField()
+    temperature_is_anomaly = BooleanField(default=False)
+    humidity_is_anomaly = BooleanField(default=False)
     created_at = DateTimeField()
 
     class Meta:
