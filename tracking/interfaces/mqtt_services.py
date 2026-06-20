@@ -148,6 +148,8 @@ def create_environment_record(device_id, payload):
         "device_id": record.device_id,
         "temperature": record.temperature,
         "humidity": record.humidity,
+        "temperature_is_anomaly": record.temperature_is_anomaly,
+        "humidity_is_anomaly": record.humidity_is_anomaly,
         "created_at": record.created_at.isoformat(),
         "average_temperature": averages["average_temperature"],
         "average_humidity": averages["average_humidity"],
@@ -181,7 +183,7 @@ def on_tracking_telemetry_message(msg, topic_parts):
         # Sets up the mapping of telemetry types to their respective handlers
         handlers = {
             "weight": create_weight_record,
-            "environment": "",
+            "environment": create_environment_record,
             "health": "",
         }
 
