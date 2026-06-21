@@ -69,7 +69,7 @@ def publish_telemetry_response(device_id, telemetry_type, response):
         response_topic = f"store/{device_id}/response/{telemetry_type}"
 
         # Calls the publish method of the MQTT service to publish the response to the response topic
-        mqtt_service.publish(response_topic, json.dumps(response), qos=1)
+        mqtt_service.publish(response_topic, response, qos=1)
 
         logging.info("Response send to response topic %s",response_topic)
     except Exception as ex:
@@ -108,7 +108,7 @@ def create_weight_record(device_id, payload):
         "raw_weight": record.raw_weight,
         "physical_stock": record.physical_stock,
         "created_at": record.created_at.isoformat(),
-        "average_temperature": averages["average_temperature"],
+        "average_physical_stock": averages["average_physical_stock"],
     }
 
     # Publishes the response to the response topic
@@ -185,13 +185,14 @@ def on_tracking_telemetry_message(msg, topic_parts):
             "weight": create_weight_record,
             "environment": create_environment_record,
             "health": "",
+
         }
 
         # Assigns the appropriate handler based on the telemetry type
         handler = handlers.get(telemetry_type)
 
         if handler is None:
-            logging.warning("Telemetry type unknown: %s",telemetry_type)
+            logging.warning("Telemetry type unknown or not implemented: %s", telemetry_type)
             return
 
         handler(device_id, payload)
