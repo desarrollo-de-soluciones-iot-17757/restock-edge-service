@@ -11,10 +11,10 @@ load_dotenv()
 # Define the topics which the app will subscribe
 SUBSCRIPTIONS = [
     "stores/+/telemetry/weight",
-    "stores/+/telemetry/temperature",
-    "stores/+/telemetry/humidity",
+    "stores/+/telemetry/environment",
     "stores/+/health"
 ]
+
 
 
 def on_message(client, userdata, msg):
@@ -29,14 +29,24 @@ def on_message(client, userdata, msg):
 
     try:
         topic_parts = msg.topic.split("/")
+
+        if len(topic_parts) < 3:
+            logging.warning("Invalid MQTT topic: %s", msg.topic)
+            return
+
         device_topic = topic_parts[2]
 
         match device_topic:
             case "telemetry":
-                pass
-            case "health":
-                pass
+                from tracking.interfaces.mqtt_services import on_tracking_telemetry_message
+                on_tracking_telemetry_message(msg, topic_parts)
 
+            case "health":
+                logging.info("Health message received from topic %s", msg.topic)
+
+            case _:
+                logging.warning("Unknown MQTT topic: %s", msg.topic)
+            
     except Exception as ex:
         logging.exception("Error while processing MQTT message: %s", ex)
 

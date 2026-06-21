@@ -13,11 +13,14 @@ Note:
     Peewee's ``SqliteDatabase`` manages the connection lifecycle through its
     own thread-local storage.
 """
+import os
+
 from peewee import SqliteDatabase
 
 # Shared SQLite database instance used by all bounded-context ORM models.
-db = SqliteDatabase("restock_edge.db")
+DB_PATH = os.getenv("SQLITE_DB_PATH", "restock_edge.db")
 
+db = SqliteDatabase(DB_PATH)
 
 def init_db() -> None:
     """Open the database connection and create all required tables.
