@@ -4,6 +4,13 @@ Application services sit between the interface layer and the domain layer. They
 orchestrate use-cases by coordinating domain services, domain entities and
 repositories without containing domain logic themselves.
 """
+import json
+import logging
+import os
+from urllib import error, request
+
+from dotenv import load_dotenv
+
 from devices.domain.entities import DeviceThreshold
 from devices.infrastructure.repositories import DeviceThresholdRepository
 from tracking.domain.entities import WeightRecord
@@ -13,6 +20,8 @@ from tracking.domain.services import EnvironmentRecordService
 from tracking.infrastructure.repositories import WeightRecordRepository
 from tracking.infrastructure.repositories import EnvironmentRecordRepository
 from iam.infrastructure.repositories import DeviceRepository
+
+load_dotenv()
 
 
 class WeightRecordApplicationService:
@@ -113,7 +122,97 @@ class EnvironmentRecordApplicationService:
         """Initialize the service with its required collaborators."""
         self.environment_record_repository = EnvironmentRecordRepository()
         self.environment_record_service = EnvironmentRecordService()
+        self.device_threshold_repository = DeviceThresholdRepository()
         self.device_repository = DeviceRepository()
+
+    DEFAULT_MIN_TEMPERATURE_CELSIUS = 0.1
+    DEFAULT_MAX_TEMPERATURE_CELSIUS = 90.1
+    DEFAULT_MIN_HUMIDITY_PERCENTAGE = 0.1
+    DEFAULT_MAX_HUMIDITY_PERCENTAGE = 90.1
+
+    @staticmethod
+    def _threshold_or_default(value: float | None, default: float) -> float:
+        return default if value is None else float(value)
+
+    def _get_thresholds_for_device(self, device_id: str) -> dict:
+        try:
+            threshold: DeviceThreshold = self.device_threshold_repository.get_by_device_id(device_id)
+            return {
+                "min_temperature": self._threshold_or_default(
+                    threshold.minimum_temperature_in_celsius,
+                    self.DEFAULT_MIN_TEMPERATURE_CELSIUS,
+                ),
+                "max_temperature": self._threshold_or_default(
+                    threshold.maximum_temperature_in_celsius,
+                    self.DEFAULT_MAX_TEMPERATURE_CELSIUS,
+                ),
+                "min_humidity": self._threshold_or_default(
+                    threshold.minimum_humidity_percentage,
+                    self.DEFAULT_MIN_HUMIDITY_PERCENTAGE,
+                ),
+                "max_humidity": self._threshold_or_default(
+                    threshold.maximum_humidity_percentage,
+                    self.DEFAULT_MAX_HUMIDITY_PERCENTAGE,
+                ),
+                "assigned_batch_id": threshold.assigned_batch_id,
+            }
+        except Exception:
+            return {
+                "min_temperature": self.DEFAULT_MIN_TEMPERATURE_CELSIUS,
+                "max_temperature": self.DEFAULT_MAX_TEMPERATURE_CELSIUS,
+                "min_humidity": self.DEFAULT_MIN_HUMIDITY_PERCENTAGE,
+                "max_humidity": self.DEFAULT_MAX_HUMIDITY_PERCENTAGE,
+                "assigned_batch_id": None,
+            }
+
+    @staticmethod
+    def _is_outside_range(value: float, minimum: float, maximum: float) -> bool:
+        return value < minimum or value > maximum
+
+    def _send_environment_telemetry_to_cloud(
+            self,
+            record: EnvironmentRecord,
+            assigned_batch_id: str | None,
+    ) -> None:
+        base_url = os.getenv("CLOUD_API_BASE_URL")
+        telemetry_url = os.getenv("CLOUD_TELEMETRIES_URL")
+        token = os.getenv("CLOUD_API_TOKEN")
+
+        if not telemetry_url and base_url:
+            telemetry_url = f"{base_url.rstrip('/')}/api/v1/telemetries"
+
+        if not telemetry_url:
+            logging.info("Cloud telemetry sync skipped: CLOUD_TELEMETRIES_URL is not configured")
+            return
+
+        payload = {
+            "temperatureInCelsius": record.temperature,
+            "humidityPercentage": record.humidity,
+            "assignedBatchId": assigned_batch_id,
+            "deviceId": record.device_id,
+            "temperature_is_anomaly": record.temperature_is_anomaly,
+            "humidity_is_anomaly": record.humidity_is_anomaly,
+        }
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        body = json.dumps(payload).encode("utf-8")
+        cloud_request = request.Request(
+            telemetry_url,
+            data=body,
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with request.urlopen(cloud_request, timeout=5) as response:
+                logging.info(
+                    "Environment telemetry synced to cloud with status %s",
+                    response.status,
+                )
+        except (error.HTTPError, error.URLError, TimeoutError) as ex:
+            logging.exception("Error syncing environment telemetry to cloud: %s", ex)
 
     def create_environment_record(
         self,
@@ -153,10 +252,31 @@ class EnvironmentRecordApplicationService:
         if not self.device_repository.find_by_id(device_id):
             raise ValueError("Device not found")
 
+        thresholds = self._get_thresholds_for_device(device_id)
+        temperature_is_anomaly = self._is_outside_range(
+            float(temperature),
+            thresholds["min_temperature"],
+            thresholds["max_temperature"],
+        )
+        humidity_is_anomaly = self._is_outside_range(
+            float(humidity),
+            thresholds["min_humidity"],
+            thresholds["max_humidity"],
+        )
+
         record = self.environment_record_service.create_record(
-            device_id, temperature, humidity, created_at
+            device_id,
+            temperature,
+            humidity,
+            created_at,
+            temperature_is_anomaly,
+            humidity_is_anomaly,
         )
         saved_record = self.environment_record_repository.save(record)
+        self._send_environment_telemetry_to_cloud(
+            saved_record,
+            thresholds["assigned_batch_id"],
+        )
 
         recent_records = self.environment_record_repository.find_by_device_in_interval(
             device_id

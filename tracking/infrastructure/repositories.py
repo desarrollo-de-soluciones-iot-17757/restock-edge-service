@@ -138,6 +138,8 @@ class EnvironmentRecordRepository:
             device_id=environment_record.device_id,
             temperature=environment_record.temperature,
             humidity=environment_record.humidity,
+            temperature_is_anomaly=environment_record.temperature_is_anomaly,
+            humidity_is_anomaly=environment_record.humidity_is_anomaly,
             created_at=environment_record.created_at,
         )
         return EnvironmentRecord(
@@ -146,6 +148,8 @@ class EnvironmentRecordRepository:
             environment_record.humidity,
             environment_record.created_at,
             record.id,
+            record.temperature_is_anomaly,
+            record.humidity_is_anomaly,
         )
 
     @classmethod
@@ -194,6 +198,8 @@ class EnvironmentRecordRepository:
                     record.humidity,
                     dt,
                     record.id,
+                    record.temperature_is_anomaly,
+                    record.humidity_is_anomaly,
                 )
             )
         return records

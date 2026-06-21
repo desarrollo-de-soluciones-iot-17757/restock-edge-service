@@ -69,8 +69,16 @@ class EnvironmentRecord:
         created_at (datetime): UTC timestamp of when the reading was captured.
     """
 
-    def __init__(self, device_id: str, temperature: float, humidity: float,
-                 created_at: datetime, id: int = None):
+    def __init__(
+            self,
+            device_id: str,
+            temperature: float,
+            humidity: float,
+            created_at: datetime,
+            id: int = None,
+            temperature_is_anomaly: bool = False,
+            humidity_is_anomaly: bool = False,
+    ):
         """Initialize an EnvironmentRecord entity.
 
         Args:
@@ -88,3 +96,5 @@ class EnvironmentRecord:
         self.temperature = temperature
         self.humidity = humidity
         self.created_at = created_at
+        self.temperature_is_anomaly = temperature_is_anomaly
+        self.humidity_is_anomaly = humidity_is_anomaly
