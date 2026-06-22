@@ -62,6 +62,7 @@ Main responsibility:
 Main domain concept:
 
 - `WeightRecord`
+- `EnvironmentalRecord`
 
 ## Architecture
 
@@ -75,7 +76,7 @@ Responsibilities:
 
 - define entities
 - enforce domain rules
-- keep business logic independent from frameworks and persistence tools
+- keep business logic independent of frameworks and persistence tools
 
 ### Application Layer
 
