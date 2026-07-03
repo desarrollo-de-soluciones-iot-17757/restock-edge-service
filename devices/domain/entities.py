@@ -23,6 +23,7 @@ class DeviceThreshold:
                  maximum_humidity_percentage: float,
                  minimum_temperature_in_celsius: float,
                  maximum_temperature_in_celsius: float,
+                 anomaly_threshold: float | None = None,
                  ):
         self.threshold_id = threshold_id
         self.device_id = device_id
@@ -33,3 +34,4 @@ class DeviceThreshold:
         self.maximum_humidity_percentage = maximum_humidity_percentage
         self.minimum_temperature_in_celsius = minimum_temperature_in_celsius
         self.maximum_temperature_in_celsius = maximum_temperature_in_celsius
+        self.anomaly_threshold = anomaly_threshold

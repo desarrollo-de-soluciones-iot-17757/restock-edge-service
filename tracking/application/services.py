@@ -153,6 +153,11 @@ class WeightRecordApplicationService:
             anomaly_threshold
         )
 
+        logging.info(
+            "Evaluating anomaly for device %s: weight=%s, custom_supply_weight=%s, anomaly_threshold=%s -> is_anomaly=%s",
+            device_id, weight, custom_supply_weight, anomaly_threshold, is_anomaly
+        )
+
         if is_anomaly:
             # Escenario 1: Anomaly detected, send POST to api/v1/anomalies
             created_at_iso = saved_record.created_at.isoformat() if hasattr(saved_record, "created_at") and saved_record.created_at else None
@@ -248,15 +253,10 @@ class EnvironmentRecordApplicationService:
             record: EnvironmentRecord,
             assigned_batch_id: str | None,
     ) -> None:
-        base_url = os.getenv("CLOUD_API_BASE_URL")
         telemetry_url = os.getenv("CLOUD_TELEMETRIES_URL")
-        token = os.getenv("CLOUD_API_TOKEN")
-
-        if not telemetry_url and base_url:
-            telemetry_url = f"{base_url.rstrip('/')}/api/v1/telemetries"
 
         if not telemetry_url or not telemetry_url.startswith(("http://", "https://")):
-            logging.info("Cloud telemetry sync skipped: invalid URL scheme for %s", telemetry_url)
+            logging.info("Cloud telemetry sync skipped: CLOUD_TELEMETRIES_URL is not configured")
             return
 
         payload = {

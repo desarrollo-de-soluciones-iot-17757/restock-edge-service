@@ -28,29 +28,19 @@ class DeviceThresholdApplicationService:
         maximum_humidity_percentage: float,
         minimum_temperature_in_celsius: float,
         maximum_temperature_in_celsius: float,
+        custom_supply_weight: float | None = 100.0,
+        anomaly_threshold: float | None = None,
     ) -> DeviceThreshold:
-        """
-        Create a new device threshold record.
-
-        :param device_id: The id of the device.
-        :param assigned_batch_id: The id of the assigned batch.
-        :param custom_supply_unit_measurement: The supply unit measurement.
-        :param minimum_humidity_percentage: The minimum humidity percentage.
-        :param maximum_humidity_percentage: The maximum humidity percentage.
-        :param minimum_temperature_in_celsius: The minimum temperature in Celsius.
-        :param maximum_temperature_in_celsius: The maximum temperature in Celsius.
-
-        :return: The new device threshold record.
-        """
-
         record = self.device_threshold_service.create_threshold_for_device(
-            device_id,
-            assigned_batch_id,
-            custom_supply_unit_measurement,
-            minimum_humidity_percentage,
-            maximum_humidity_percentage,
-            minimum_temperature_in_celsius,
-            maximum_temperature_in_celsius,
+            device_id=device_id,
+            assigned_batch_id=assigned_batch_id,
+            custom_supply_unit_measurement=custom_supply_unit_measurement,
+            minimum_humidity_percentage=minimum_humidity_percentage,
+            maximum_humidity_percentage=maximum_humidity_percentage,
+            minimum_temperature_in_celsius=minimum_temperature_in_celsius,
+            maximum_temperature_in_celsius=maximum_temperature_in_celsius,
+            custom_supply_weight=custom_supply_weight,
+            anomaly_threshold=anomaly_threshold,
         )
 
         return self.device_threshold_repository.save(record)
@@ -60,14 +50,6 @@ class DeviceThresholdApplicationService:
             device_id: str,
             custom_supply_weight: float,
     ) -> DeviceThreshold:
-        """
-        Calibrate the custom supply weight of a device.
-
-        :param device_id: The id of the device.
-        :param custom_supply_weight: The new custom supply weight to be calibrated for the device.
-        :return: The updated device threshold record with the new custom supply weight.
-        """
-
         return self.device_threshold_repository.calibrate_custom_supply_weight(
             device_id,
             custom_supply_weight
@@ -82,34 +64,30 @@ class DeviceThresholdApplicationService:
             maximum_humidity_percentage: float,
             minimum_temperature_in_celsius: float,
             maximum_temperature_in_celsius: float,
+            custom_supply_weight: float | None = None,
+            anomaly_threshold: float | None = None,
     ) -> DeviceThreshold:
-        """
-        Update a device threshold record.
-        It can be used to update the device threshold record or to assign a new batch to the device.
-
-        :param device_id: The id of the device.
-        :param assigned_batch_id: The id of the assigned batch.
-        :param custom_supply_unit_measurement: The supply unit measurement.
-        :param minimum_humidity_percentage: The minimum humidity percentage.
-        :param maximum_humidity_percentage: The maximum humidity percentage.
-        :param minimum_temperature_in_celsius: The minimum temperature in Celsius.
-        :param maximum_temperature_in_celsius: The maximum temperature in Celsius.
-
-        :return: The updated device threshold record.
-        """
-
-        record = self.device_threshold_repository.get_by_device_id(device_id)
+        try:
+            record = self.device_threshold_repository.get_by_device_id(device_id)
+            threshold_id = record.threshold_id
+            if custom_supply_weight is None:
+                custom_supply_weight = record.custom_supply_weight
+            if anomaly_threshold is None:
+                anomaly_threshold = getattr(record, "anomaly_threshold", None)
+        except Exception:
+            threshold_id = 0
 
         updated_threshold = self.device_threshold_service.create_threshold_for_device(
-            threshold_id=record.threshold_id,
+            threshold_id=threshold_id,
             device_id=device_id,
             assigned_batch_id=assigned_batch_id,
-            custom_supply_weight=record.custom_supply_weight,
+            custom_supply_weight=custom_supply_weight,
             custom_supply_unit_measurement=custom_supply_unit_measurement,
             minimum_humidity_percentage=minimum_humidity_percentage,
             maximum_humidity_percentage=maximum_humidity_percentage,
             minimum_temperature_in_celsius=minimum_temperature_in_celsius,
             maximum_temperature_in_celsius=maximum_temperature_in_celsius,
+            anomaly_threshold=anomaly_threshold,
         )
 
         return self.device_threshold_repository.update(updated_threshold)

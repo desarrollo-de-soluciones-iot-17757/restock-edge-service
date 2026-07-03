@@ -34,19 +34,24 @@ def create_threshold_for_device(device_id: str):
 
     try:
         assigned_batch_id = data["assigned_batch_id"]
+        custom_supply_unit_measurement = data.get("custom_supply_unit_measurement")
+        custom_supply_weight = data.get("custom_supply_weight")
+        anomaly_threshold = data.get("anomaly_threshold")
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
         minimum_temperature_in_celsius = data["minimum_temperature_in_celsius"]
         maximum_temperature_in_celsius = data["maximum_temperature_in_celsius"]
 
         record = device_threshold_service.create_device_threshold(
-            device_id,
-            assigned_batch_id,
-            None,
-            minimum_humidity_percentage,
-            maximum_humidity_percentage,
-            minimum_temperature_in_celsius,
-            maximum_temperature_in_celsius,
+            device_id=device_id,
+            assigned_batch_id=assigned_batch_id,
+            custom_supply_unit_measurement=custom_supply_unit_measurement,
+            minimum_humidity_percentage=minimum_humidity_percentage,
+            maximum_humidity_percentage=maximum_humidity_percentage,
+            minimum_temperature_in_celsius=minimum_temperature_in_celsius,
+            maximum_temperature_in_celsius=maximum_temperature_in_celsius,
+            custom_supply_weight=custom_supply_weight,
+            anomaly_threshold=anomaly_threshold,
         )
         auth_application_service.mark_device_configured(device_id)
 
@@ -72,20 +77,24 @@ def update_threshold_for_device(device_id: str):
 
     try:
         assigned_batch_id = data["assigned_batch_id"]
-        custom_supply_unit_measurement = data["custom_supply_unit_measurement"]
+        custom_supply_unit_measurement = data.get("custom_supply_unit_measurement")
+        custom_supply_weight = data.get("custom_supply_weight")
+        anomaly_threshold = data.get("anomaly_threshold")
         minimum_humidity_percentage = data["minimum_humidity_percentage"]
         maximum_humidity_percentage = data["maximum_humidity_percentage"]
         minimum_temperature_in_celsius = data["minimum_temperature_in_celsius"]
         maximum_temperature_in_celsius = data["maximum_temperature_in_celsius"]
 
         record = device_threshold_service.update_device_threshold(
-            device_id,
-            assigned_batch_id,
-            custom_supply_unit_measurement,
-            minimum_humidity_percentage,
-            maximum_humidity_percentage,
-            minimum_temperature_in_celsius,
-            maximum_temperature_in_celsius,
+            device_id=device_id,
+            assigned_batch_id=assigned_batch_id,
+            custom_supply_unit_measurement=custom_supply_unit_measurement,
+            minimum_humidity_percentage=minimum_humidity_percentage,
+            maximum_humidity_percentage=maximum_humidity_percentage,
+            minimum_temperature_in_celsius=minimum_temperature_in_celsius,
+            maximum_temperature_in_celsius=maximum_temperature_in_celsius,
+            custom_supply_weight=custom_supply_weight,
+            anomaly_threshold=anomaly_threshold,
         )
         auth_application_service.mark_device_calibrated(device_id)
 

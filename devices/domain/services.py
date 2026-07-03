@@ -16,23 +16,9 @@ class DeviceThresholdService:
                          minimum_temperature_in_celsius: float,
                          maximum_temperature_in_celsius: float,
                          threshold_id: int = 0,
-                         custom_supply_weight: float = 1.0,
+                         custom_supply_weight: float | None = 100.0,
+                         anomaly_threshold: float | None = None,
                          ) -> DeviceThreshold:
-        """
-        Method to create a DeviceThreshold entity with validated data.
-
-        :param threshold_id: The id of the device threshold
-        :param device_id: The device id of the device
-        :param assigned_batch_id: The assigned batch id of the device
-        :param custom_supply_weight: The custom supply weight of the device
-        :param custom_supply_unit_measurement: The unit measurement of the device
-        :param minimum_humidity_percentage: The minimum humidity percentage of the device
-        :param maximum_humidity_percentage: The maximum humidity percentage of the device
-        :param minimum_temperature_in_celsius: The minimum temperature in Celsius
-        :param maximum_temperature_in_celsius: The maximum temperature in Celsius
-
-        :return: A DeviceThreshold entity
-        """
         try:
             parsed_custom_supply_unit_measurement = (
                 str(custom_supply_unit_measurement)
@@ -43,6 +29,12 @@ class DeviceThresholdService:
             parsed_custom_supply_weight = (
                 float(custom_supply_weight)
                 if custom_supply_weight is not None
+                else None
+            )
+
+            parsed_anomaly_threshold = (
+                float(anomaly_threshold)
+                if anomaly_threshold is not None
                 else None
             )
 
@@ -64,4 +56,5 @@ class DeviceThresholdService:
             maximum_humidity_percentage=parsed_maximum_humidity_percentage,
             minimum_temperature_in_celsius=parsed_minimum_temperature_in_celsius,
             maximum_temperature_in_celsius=parsed_maximum_temperature_in_celsius,
+            anomaly_threshold=parsed_anomaly_threshold,
         )
