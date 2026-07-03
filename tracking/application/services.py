@@ -50,6 +50,57 @@ class WeightRecordApplicationService:
         self.device_threshold_repository = DeviceThresholdRepository()
         self.device_repository = DeviceRepository()
 
+    def _send_anomaly_to_cloud(
+        self,
+        device_id: str,
+        registered_value: float,
+        timestamp_iso: str | None = None,
+    ) -> None:
+        """Sends a physical anomaly report to the cloud backend API.
+
+        Escenario 1: If physical anomaly threshold is breached, post to api/v1/anomalies.
+        Escenario 3: Safely catches HTTPError, URLError, TimeoutError without crashing.
+        """
+        base_url = os.getenv("CLOUD_API_BASE_URL")
+        anomalies_url = os.getenv("CLOUD_ANOMALIES_URL")
+        token = os.getenv("CLOUD_API_TOKEN")
+
+        if not anomalies_url and base_url:
+            anomalies_url = f"{base_url.rstrip('/')}/api/v1/anomalies"
+
+        if not anomalies_url:
+            logging.info("Cloud anomaly reporting skipped: CLOUD_ANOMALIES_URL is not configured")
+            return
+
+        from datetime import datetime, timezone
+        payload = {
+            "deviceId": device_id,
+            "registeredValue": registered_value,
+            "timestamp": timestamp_iso or datetime.now(timezone.utc).isoformat()
+        }
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        body = json.dumps(payload).encode("utf-8")
+        cloud_request = request.Request(
+            anomalies_url,
+            data=body,
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with request.urlopen(cloud_request, timeout=5) as response:
+                logging.info(
+                    "Physical anomaly reported to cloud with status %s",
+                    response.status,
+                )
+        except (error.HTTPError, error.URLError, TimeoutError) as ex:
+            logging.exception("Error reporting physical anomaly to cloud: %s", ex)
+        except Exception as ex:
+            logging.exception("Unexpected error reporting physical anomaly: %s", ex)
+
     def create_weight_record(
         self,
         device_id: str,
@@ -75,8 +126,15 @@ class WeightRecordApplicationService:
             raise ValueError("Device not found")
 
         # Retrieves the custom supply weight for the device
-        device_threshold: DeviceThreshold = self.device_threshold_repository.get_by_device_id(device_id)
-        custom_supply_weight = device_threshold.custom_supply_weight
+        try:
+            device_threshold = self.device_threshold_repository.get_by_device_id(device_id)
+            custom_supply_weight = device_threshold.custom_supply_weight if device_threshold else 100.0
+        except Exception:
+            device_threshold = None
+            custom_supply_weight = 100.0
+
+        if custom_supply_weight is None or custom_supply_weight <= 0:
+            custom_supply_weight = 100.0
 
         # Calculates the physical stock based on the raw weight and custom supply weight
         physical_stock = float(self.weight_record_service.calculate_physical_stock(weight, custom_supply_weight))
@@ -86,6 +144,22 @@ class WeightRecordApplicationService:
 
         # Persists the record and computes updated averages
         saved_record = self.weight_record_repository.save(record)
+
+        # Evaluates physical anomaly threshold
+        anomaly_threshold = getattr(device_threshold, "anomaly_threshold", None)
+        is_anomaly = self.weight_record_service.is_physical_anomaly(
+            weight,
+            custom_supply_weight,
+            anomaly_threshold
+        )
+
+        if is_anomaly:
+            # Escenario 1: Anomaly detected, send POST to api/v1/anomalies
+            created_at_iso = saved_record.created_at.isoformat() if hasattr(saved_record, "created_at") and saved_record.created_at else None
+            self._send_anomaly_to_cloud(device_id, weight, created_at_iso)
+        else:
+            # Escenario 2: Variation within normal tolerance, discard cloud call
+            logging.info("Weight variation within normal tolerance for device %s. Cloud anomaly report skipped.", device_id)
 
         # Retrieves recent records from the configured interval and computes the average
         recent_records = self.weight_record_repository.find_by_device_in_interval(device_id)
@@ -181,8 +255,8 @@ class EnvironmentRecordApplicationService:
         if not telemetry_url and base_url:
             telemetry_url = f"{base_url.rstrip('/')}/api/v1/telemetries"
 
-        if not telemetry_url:
-            logging.info("Cloud telemetry sync skipped: CLOUD_TELEMETRIES_URL is not configured")
+        if not telemetry_url or not telemetry_url.startswith(("http://", "https://")):
+            logging.info("Cloud telemetry sync skipped: invalid URL scheme for %s", telemetry_url)
             return
 
         payload = {
@@ -213,6 +287,8 @@ class EnvironmentRecordApplicationService:
                 )
         except (error.HTTPError, error.URLError, TimeoutError) as ex:
             logging.exception("Error syncing environment telemetry to cloud: %s", ex)
+        except Exception as ex:
+            logging.exception("Unexpected error syncing environment telemetry: %s", ex)
 
     def create_environment_record(
         self,

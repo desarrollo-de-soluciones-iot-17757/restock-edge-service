@@ -57,9 +57,57 @@ def init_db() -> None:
     ], safe=True)
 
     _ensure_environment_anomaly_columns()
+    _ensure_device_threshold_schema()
+    _ensure_weight_record_schema()
 
     if should_close and not db.is_closed():
         db.close()
+
+
+def _ensure_weight_record_schema() -> None:
+    """Ensure weight_records table schema matches current WeightRecord model."""
+    try:
+        existing_columns = {
+            row[1] for row in db.execute_sql("PRAGMA table_info(weight_records)")
+        }
+        if existing_columns:
+            if "raw_weight" not in existing_columns:
+                if "weight" in existing_columns:
+                    db.execute_sql("ALTER TABLE weight_records RENAME COLUMN weight TO raw_weight")
+                else:
+                    db.execute_sql("ALTER TABLE weight_records ADD COLUMN raw_weight REAL DEFAULT 0.0")
+            if "physical_stock" not in existing_columns:
+                db.execute_sql("ALTER TABLE weight_records ADD COLUMN physical_stock REAL DEFAULT 0.0")
+    except Exception:
+        pass
+
+
+def _ensure_device_threshold_schema() -> None:
+    """Ensure device_thresholds table schema matches current DeviceThresholdModel."""
+    try:
+        existing_columns = {
+            row[1] for row in db.execute_sql("PRAGMA table_info(device_thresholds)")
+        }
+        if existing_columns and "threshold_id" not in existing_columns:
+            db.execute_sql("DROP TABLE IF EXISTS device_thresholds")
+            from devices.infrastructure.models import DeviceThresholdModel
+            db.create_tables([DeviceThresholdModel], safe=True)
+            existing_columns = {
+                row[1] for row in db.execute_sql("PRAGMA table_info(device_thresholds)")
+            }
+
+        columns_to_add = {
+            "custom_supply_weight": "REAL",
+            "custom_supply_unit_measurement": "VARCHAR(255)",
+            "anomaly_threshold": "REAL",
+        }
+        for column_name, column_definition in columns_to_add.items():
+            if column_name not in existing_columns:
+                db.execute_sql(
+                    f"ALTER TABLE device_thresholds ADD COLUMN {column_name} {column_definition}"
+                )
+    except Exception:
+        pass
 
 
 def _ensure_environment_anomaly_columns() -> None:

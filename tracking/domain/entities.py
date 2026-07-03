@@ -48,6 +48,14 @@ class WeightRecord:
         self.physical_stock = physical_stock
         self.created_at = created_at
 
+    @property
+    def id(self):
+        return self.weight_record_id
+
+    @property
+    def weight(self):
+        return self.raw_weight
+
 
 class EnvironmentRecord:
     """Aggregate root representing a single environment telemetry reading.
