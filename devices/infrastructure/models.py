@@ -27,6 +27,7 @@ class DeviceThresholdModel(Model):
     maximum_humidity_percentage = FloatField(null=False)
     minimum_temperature_in_celsius = FloatField(null=False)
     maximum_temperature_in_celsius = FloatField(null=False)
+    anomaly_threshold = FloatField(null=True)
 
     class Meta:
         """ Peewee metadata that binds the model to the shared database. """
