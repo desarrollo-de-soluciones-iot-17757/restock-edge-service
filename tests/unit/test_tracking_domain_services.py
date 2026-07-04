@@ -100,6 +100,36 @@ class TestWeightRecordServiceCalculateAverages:
         assert result["average_physical_stock"] == 3.0
 
 
+class TestWeightRecordServiceIsPhysicalAnomaly:
+    """UT-ES-08 – WeightRecordService.is_physical_anomaly"""
+
+    def test_residual_within_default_tolerance_is_not_anomaly(self):
+        """104g against a 100g custom supply weight (residual 4g) stays within the
+        default permitted tolerance (5g) so no anomaly is flagged."""
+        assert WeightRecordService.is_physical_anomaly(104.0, 100.0) is False
+
+    def test_residual_beyond_default_tolerance_is_anomaly(self):
+        """110g against a 100g custom supply weight (residual 10g) exceeds the
+        default permitted tolerance (5g) so an anomaly is flagged."""
+        assert WeightRecordService.is_physical_anomaly(110.0, 100.0) is True
+
+    def test_custom_threshold_overrides_default_tolerance(self):
+        """A residual of 10g would normally be flagged, but an explicit
+        anomaly_threshold of 20g takes precedence and suppresses it."""
+        assert WeightRecordService.is_physical_anomaly(110.0, 100.0, anomaly_threshold=20.0) is False
+
+    def test_residual_beyond_custom_threshold_is_anomaly(self):
+        """A residual of 25g exceeds the explicit anomaly_threshold of 20g."""
+        assert WeightRecordService.is_physical_anomaly(125.0, 100.0, anomaly_threshold=20.0) is True
+
+    def test_none_custom_supply_weight_returns_false(self):
+        assert WeightRecordService.is_physical_anomaly(500.0, None) is False
+
+    def test_zero_or_negative_custom_supply_weight_returns_false(self):
+        assert WeightRecordService.is_physical_anomaly(500.0, 0.0) is False
+        assert WeightRecordService.is_physical_anomaly(500.0, -10.0) is False
+
+
 # ---------------------------------------------------------------------------
 # EnvironmentRecordService – Unit Tests
 # ---------------------------------------------------------------------------
