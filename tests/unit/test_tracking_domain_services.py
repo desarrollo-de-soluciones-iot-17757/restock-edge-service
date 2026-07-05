@@ -1,4 +1,4 @@
-"""Unit tests for tracking domain services (WeightRecordService and EnvironmentRecordService).
+"""Unit tests for compressed domain services.
 
 These tests validate the business invariants enforced by the domain layer without
 any dependency on infrastructure (database, HTTP, etc.).
@@ -6,6 +6,8 @@ any dependency on infrastructure (database, HTTP, etc.).
 import pytest
 from datetime import datetime, timezone
 
+from devices.domain.services import DeviceStatusSemanticError
+from devices.domain.services import DeviceStatusService
 from tracking.domain.services import WeightRecordService, EnvironmentRecordService
 from tracking.domain.entities import WeightRecord, EnvironmentRecord
 
@@ -191,3 +193,99 @@ class TestEnvironmentRecordServiceCalculateAverages:
         result = EnvironmentRecordService.calculate_averages(records)
         assert result["average_temperature"] == 25.0
         assert result["average_humidity"] == 60.0
+
+
+# ---------------------------------------------------------------------------
+# DeviceStatusService - Unit Tests
+# ---------------------------------------------------------------------------
+
+class TestDeviceStatusServiceCreateStatusReport:
+    """TS-45 - DeviceStatusService.create_status_report"""
+
+    def test_health_anomaly_payload_creates_critical_report_and_event(self):
+        payload = {
+            "device_id": "device-1",
+            "branch_id": "branch-001",
+            "alert_type": "HEALTH_ANOMALY",
+            "metric": "cpu",
+            "value": "90.1",
+            "threshold": "85.0",
+            "message": "High CPU usage threshold breached.",
+            "timestamp_ms": 123456,
+        }
+
+        report, event, result = DeviceStatusService.create_status_report(payload, "MQTT")
+
+        assert report.health_status == "CRITICAL"
+        assert report.critical is True
+        assert report.source == "MQTT"
+        assert report.cpu_usage_percentage == 90.1
+        assert event is not None
+        assert event.event_type == "ERROR"
+        assert result["metric"] == "cpu"
+
+    def test_boot_reset_payload_creates_info_report_and_event(self):
+        payload = {
+            "device_id": "device-1",
+            "branch_id": "branch-001",
+            "alert_type": "BOOT_RESET_REASON",
+            "metric": "reset_reason",
+            "value": "POWER_ON",
+            "threshold": "",
+            "message": "Device booted after power-on reset.",
+            "timestamp_ms": 123456,
+        }
+
+        report, event, result = DeviceStatusService.create_status_report(payload, "MQTT")
+
+        assert report.health_status == "INFO"
+        assert report.critical is False
+        assert report.value is None
+        assert event is not None
+        assert event.event_type == "INFO"
+        assert result["metric"] == "reset_reason"
+
+    def test_heap_metric_maps_to_free_heap_bytes(self):
+        payload = {
+            "device_id": "device-1",
+            "branch_id": "branch-001",
+            "alert_type": "HEALTH_ANOMALY",
+            "metric": "heap",
+            "value": "45000",
+            "threshold": "50000",
+            "message": "Free heap threshold breached.",
+            "timestamp_ms": 123456,
+        }
+
+        report, event, result = DeviceStatusService.create_status_report(payload, "MQTT")
+
+        assert report.health_status == "CRITICAL"
+        assert report.free_heap_bytes == 45000.0
+        assert report.metric == "heap"
+        assert event.metric == "heap"
+
+    def test_snapshot_payload_is_not_the_health_contract(self):
+        payload = {
+            "device_id": "device-1",
+            "cpu_usage_percentage": 45.5,
+            "free_heap_bytes": 120000,
+            "voltage": 3.3,
+        }
+
+        with pytest.raises(ValueError, match="Missing alert_type"):
+            DeviceStatusService.create_status_report(payload, "HTTP")
+
+    def test_unsupported_alert_type_is_semantically_invalid(self):
+        payload = {
+            "device_id": "device-1",
+            "branch_id": "branch-001",
+            "alert_type": "UNKNOWN",
+            "metric": "cpu",
+            "value": "90.1",
+            "threshold": "85.0",
+            "message": "Unsupported alert.",
+            "timestamp_ms": 123456,
+        }
+
+        with pytest.raises(DeviceStatusSemanticError, match="Unsupported alert_type"):
+            DeviceStatusService.create_status_report(payload, "HTTP")
