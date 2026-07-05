@@ -1,5 +1,14 @@
+import json
+import logging
+import os
+from urllib import error, request
+
+from devices.domain.entities import DeviceStatusReport
 from devices.domain.entities import DeviceThreshold
+from devices.domain.services import DeviceStatusService
 from devices.domain.services import DeviceThresholdService
+from devices.infrastructure.repositories import DeviceHealthEventRepository
+from devices.infrastructure.repositories import DeviceStatusReportRepository
 from devices.infrastructure.repositories import DeviceThresholdRepository
 from iam.infrastructure.repositories import DeviceRepository
 
@@ -91,3 +100,103 @@ class DeviceThresholdApplicationService:
         )
 
         return self.device_threshold_repository.update(updated_threshold)
+
+
+class DeviceStatusApplicationService:
+    """
+    Application service that orchestrates device health status registration.
+
+    MQTT is the real source of embedded health telemetry. HTTP delegates to the
+    same service only as a fallback/testing path, preserving one use-case for
+    evaluation, persistence and cloud reporting.
+    """
+
+    def __init__(self):
+        """Initialize the device status application service."""
+        self.device_status_service = DeviceStatusService()
+        self.device_status_report_repository = DeviceStatusReportRepository()
+        self.device_health_event_repository = DeviceHealthEventRepository()
+        self.device_repository = DeviceRepository()
+
+    def register_status(self, payload: dict, source: str = "HTTP") -> dict:
+        """
+        Register an embedded-style device health status report.
+
+        :param payload: Raw HealthTelemetryPackage received from MQTT or simulated through HTTP.
+        :param source: Input source, usually MQTT or HTTP.
+        :return: Result dictionary containing persisted report, optional event and response metadata.
+        :raise ValueError: If the payload is invalid or the device is not registered.
+        """
+        report, event, evaluation = self.device_status_service.create_status_report(
+            payload,
+            source=source,
+        )
+
+        if not self.device_repository.find_by_id(report.device_id):
+            raise LookupError("Device not found")
+
+        saved_report = self.device_status_report_repository.save(report)
+        saved_event = None
+        if event:
+            saved_event = self.device_health_event_repository.save(event)
+
+        if saved_event and saved_report.critical:
+            self._send_device_event_to_cloud(saved_report, saved_event)
+
+        return {
+            "report": saved_report,
+            "event": saved_event,
+            "health_status": saved_report.health_status,
+            "critical": saved_report.critical,
+            "metric": evaluation.get("metric"),
+            "reason": evaluation.get("reason"),
+            "event_registered": saved_event is not None,
+            "message": "Device status registered successfully",
+        }
+
+    def _send_device_event_to_cloud(self, report: DeviceStatusReport, event) -> None:
+        """
+        Send a critical device health event to the configured cloud endpoint.
+
+        The call is best-effort: missing configuration or network errors are
+        logged and never fail the local status registration flow.
+        """
+        events_url = os.getenv("CLOUD_DEVICE_EVENTS_URL")
+
+        if not events_url:
+            logging.info("Cloud device event sync skipped: CLOUD_DEVICE_EVENTS_URL is not configured")
+            return
+
+        payload = {
+            "deviceId": report.device_id,
+            "branchId": report.branch_id,
+            "healthStatus": report.health_status,
+            "eventType": event.event_type,
+            "metric": event.metric,
+            "value": event.value,
+            "threshold": event.threshold,
+            "reason": event.reason,
+            "message": event.message,
+            "source": event.source,
+            "createdAt": event.created_at.isoformat(),
+        }
+        headers = {"Content-Type": "application/json"}
+
+        body = json.dumps(payload).encode("utf-8")
+        cloud_request = request.Request(
+            events_url,
+            data=body,
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with request.urlopen(cloud_request, timeout=5) as response:
+                logging.info(
+                    "Device health event synced to cloud with status %s",
+                    response.status,
+                )
+        except (error.HTTPError, error.URLError, TimeoutError) as ex:
+            logging.exception("Error syncing device health event to cloud: %s", ex)
+        except Exception as ex:
+            logging.exception("Unexpected error syncing device health event: %s", ex)

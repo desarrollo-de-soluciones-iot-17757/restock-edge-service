@@ -73,11 +73,14 @@ class TestWeightRecordEndpoint:
         record.id = 1
         record.device_id = "device-1"
         record.weight = 500.0
+        record.physical_stock = 5.0
         record.created_at = datetime.now(timezone.utc)
 
         with patch("tracking.interfaces.rest_services.weight_record_service") as mock_svc, \
                 patch("iam.interfaces.services.authenticate_request", return_value=None):
-            mock_svc.create_weight_record.return_value = record
+            mock_svc.create_weight_record.return_value = (
+                record, {"average_physical_stock": 5.0}
+            )
             response = client.post(
                 "/api/v1/tracking/weight-records",
                 data=json.dumps({"device_id": "device-1", "weight": 500.0}),
