@@ -16,6 +16,43 @@ SUBSCRIPTIONS = [
 ]
 
 
+def on_device_health_message(msg):
+    """
+    Handle the embedded HealthTelemetryPackage received through MQTT.
+
+    MQTT is the real source for device health. The broker does not transform
+    the payload; the Edge parses the same JSON published by embedded and
+    delegates processing to DeviceStatusApplicationService without duplicating
+    domain logic or returning HTTP responses.
+    """
+    try:
+        payload = json.loads(msg.payload.decode("utf-8"))
+        if not isinstance(payload, dict):
+            logging.warning("Invalid health payload type from topic %s", msg.topic)
+            return
+
+        if not payload.get("device_id"):
+            logging.warning("Health payload missing device_id from topic %s: %s", msg.topic, payload)
+            return
+
+        from devices.application.services import DeviceStatusApplicationService
+        device_status_service = DeviceStatusApplicationService()
+        result = device_status_service.register_status(payload, source="MQTT")
+        logging.info(
+            "Health status registered from MQTT for device %s: health_status=%s critical=%s event_registered=%s",
+            payload.get("device_id"),
+            result["health_status"],
+            result["critical"],
+            result["event_registered"],
+        )
+    except json.JSONDecodeError as ex:
+        logging.exception("Invalid JSON in health MQTT message from topic %s: %s", msg.topic, ex)
+    except ValueError as ex:
+        logging.exception("Invalid health MQTT payload from topic %s: %s", msg.topic, ex)
+    except Exception as ex:
+        logging.exception("Error while processing health MQTT message from topic %s: %s", msg.topic, ex)
+
+
 
 def on_message(client, userdata, msg):
     """
@@ -43,6 +80,7 @@ def on_message(client, userdata, msg):
 
             case "health":
                 logging.info("Health message received from topic %s", msg.topic)
+                on_device_health_message(msg)
 
             case _:
                 logging.warning("Unknown MQTT topic: %s", msg.topic)
