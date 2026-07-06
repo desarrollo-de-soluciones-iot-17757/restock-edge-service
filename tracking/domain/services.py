@@ -173,7 +173,8 @@ class WeightRecordService:
         residual_weight = abs(weight - expected_weight)
 
         if anomaly_threshold is not None and anomaly_threshold > 0:
-            return residual_weight > anomaly_threshold
+            permitted_threshold_grams = custom_supply_weight * (anomaly_threshold / 100.0)
+            return residual_weight > permitted_threshold_grams
 
         permitted_difference = min(
             cls.MAXIMUM_DIFFERENCE_GRAMS,

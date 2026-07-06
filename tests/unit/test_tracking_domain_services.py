@@ -115,14 +115,15 @@ class TestWeightRecordServiceIsPhysicalAnomaly:
         default permitted tolerance (5g) so an anomaly is flagged."""
         assert WeightRecordService.is_physical_anomaly(110.0, 100.0) is True
 
-    def test_custom_threshold_overrides_default_tolerance(self):
-        """A residual of 10g would normally be flagged, but an explicit
-        anomaly_threshold of 20g takes precedence and suppresses it."""
-        assert WeightRecordService.is_physical_anomaly(110.0, 100.0, anomaly_threshold=20.0) is False
+    def test_custom_threshold_percentage_overrides_default_tolerance(self):
+        """A residual of 20g against a 200g supply weight is 10%, which stays within
+        an explicit anomaly_threshold of 15% (30g permitted threshold)."""
+        assert WeightRecordService.is_physical_anomaly(220.0, 200.0, anomaly_threshold=15.0) is False
 
-    def test_residual_beyond_custom_threshold_is_anomaly(self):
-        """A residual of 25g exceeds the explicit anomaly_threshold of 20g."""
-        assert WeightRecordService.is_physical_anomaly(125.0, 100.0, anomaly_threshold=20.0) is True
+    def test_residual_beyond_custom_threshold_percentage_is_anomaly(self):
+        """A residual of 35g against a 200g supply weight is 17.5%, which exceeds
+        the explicit anomaly_threshold of 15% (30g permitted threshold)."""
+        assert WeightRecordService.is_physical_anomaly(235.0, 200.0, anomaly_threshold=15.0) is True
 
     def test_none_custom_supply_weight_returns_false(self):
         assert WeightRecordService.is_physical_anomaly(500.0, None) is False
