@@ -58,8 +58,8 @@ class WeightRecordApplicationService:
     ) -> None:
         """Sends a physical anomaly report to the cloud backend API.
 
-        Escenario 1: If physical anomaly threshold is breached, post to api/v1/anomalies.
-        Escenario 3: Safely catches HTTPError, URLError, TimeoutError without crashing.
+        Scenario 1: If the physical anomaly threshold is breached, post to api/v1/anomalies.
+        Scenario 3: Safely catches HTTPError, URLError, TimeoutError without crashing.
         """
         base_url = os.getenv("CLOUD_API_BASE_URL")
         anomalies_url = os.getenv("CLOUD_ANOMALIES_URL")
@@ -145,7 +145,7 @@ class WeightRecordApplicationService:
         # Persists the record and computes updated averages
         saved_record = self.weight_record_repository.save(record)
 
-        # Evaluates physical anomaly threshold
+        # Evaluates the physical anomaly threshold
         anomaly_threshold = getattr(device_threshold, "anomaly_threshold", None)
         is_anomaly = self.weight_record_service.is_physical_anomaly(
             weight,
@@ -159,11 +159,11 @@ class WeightRecordApplicationService:
         )
 
         if is_anomaly:
-            # Escenario 1: Anomaly detected, send POST to api/v1/anomalies
+            # Scenario 1: Anomaly detected, send POST to api/v1/anomalies
             created_at_iso = saved_record.created_at.isoformat() if hasattr(saved_record, "created_at") and saved_record.created_at else None
             self._send_anomaly_to_cloud(device_id, weight, created_at_iso)
         else:
-            # Escenario 2: Variation within normal tolerance, discard cloud call
+            # Scenario 2: Variation within normal tolerance, discard cloud call
             logging.info("Weight variation within normal tolerance for device %s. Cloud anomaly report skipped.", device_id)
 
         # Retrieves recent records from the configured interval and computes the average
@@ -254,6 +254,7 @@ class EnvironmentRecordApplicationService:
             assigned_batch_id: str | None,
     ) -> None:
         telemetry_url = os.getenv("CLOUD_TELEMETRIES_URL")
+        token = os.getenv("CLOUD_API_TOKEN")
 
         if not telemetry_url or not telemetry_url.startswith(("http://", "https://")):
             logging.info("Cloud telemetry sync skipped: CLOUD_TELEMETRIES_URL is not configured")
