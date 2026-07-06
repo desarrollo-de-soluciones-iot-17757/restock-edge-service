@@ -7,6 +7,8 @@ invariants.
 """
 from datetime import datetime
 
+from iam.domain.enums import DisplayMode
+
 
 class Device:
     """Aggregate root representing a registered Restock IoT device.
@@ -23,6 +25,7 @@ class Device:
         status (str): Device lifecycle status.
         created_at (datetime): UTC timestamp recording when the device was
             first registered in the local edge database.
+        display_mode (str): Display mode of the device.
     """
 
     def __init__(
@@ -44,6 +47,7 @@ class Device:
         self.device_token = device_token
         self.status = status
         self.created_at = created_at
+        self.display_mode: str = DisplayMode.DISPLAY_MODE_WEIGHT.name
 
 
 class DeviceStatus:
