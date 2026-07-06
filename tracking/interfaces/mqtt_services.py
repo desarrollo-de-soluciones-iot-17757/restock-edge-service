@@ -66,7 +66,7 @@ def publish_telemetry_response(device_id, telemetry_type, response):
 
     try:
         # Construct the response topic based on the device ID and telemetry type
-        response_topic = f"store/{device_id}/response/{telemetry_type}"
+        response_topic = f"stores/{device_id}/response/{telemetry_type}"
 
         # Calls the publish method of the MQTT service to publish the response to the response topic
         mqtt_service.publish(response_topic, response, qos=1)
