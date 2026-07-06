@@ -96,6 +96,13 @@ class AuthApplicationService:
             raise ValueError("Device not found")
         return device
 
+    def get_by_id(self, device_id: str) -> Device:
+        """Retrieve a device by its MAC-address id."""
+        device = self.device_repository.find_by_id(device_id)
+        if device is None:
+            raise ValueError("Device not found")
+        return device
+
     def update_display_mode(self, device_id: str, display_mode: str) -> Device:
         """Update the display mode for a registered device."""
         available_display_modes = [mode.value for mode in DisplayMode]
