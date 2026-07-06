@@ -9,15 +9,58 @@ code selection.
 """
 from flask import Blueprint, jsonify, request
 
+from devices.application.services import DeviceStatusApplicationService
 from devices.application.services import DeviceThresholdApplicationService
+from devices.domain.services import DeviceStatusSemanticError
 from iam.application.services import AuthApplicationService
+from iam.interfaces.services import authenticate_request
 
 # This module defines the Flask Blueprint for device-related API endpoints and initializes
 devices_api = Blueprint("devices_api", __name__)
 
 # Module-level singleton; it contains no request-specific mutable state.
 device_threshold_service = DeviceThresholdApplicationService()
+device_status_service = DeviceStatusApplicationService()
 auth_application_service = AuthApplicationService()
+
+
+@devices_api.route("/api/v1/devices/status", methods=["POST"])
+def register_device_status():
+    """
+    Fallback endpoint to register a device health status report.
+
+    MQTT is the real source of device health telemetry. This endpoint exists
+    for Postman/Swagger/manual testing and accepts the same event-style JSON
+    published by embedded before delegating to DeviceStatusApplicationService.
+    """
+    auth_result = authenticate_request()
+    if auth_result:
+        return auth_result
+
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    try:
+        result = device_status_service.register_status(data, source="HTTP")
+        report = result["report"]
+
+        return jsonify({
+            "device_id": report.device_id,
+            "health_status": result["health_status"],
+            "critical": result["critical"],
+            "event_registered": result["event_registered"],
+            "metric": result["metric"],
+            "reason": result["reason"],
+        }), 201
+    except KeyError:
+        return jsonify({"error": "Missing required fields"}), 400
+    except DeviceStatusSemanticError as error:
+        return jsonify({"error": str(error)}), 422
+    except LookupError as error:
+        return jsonify({"error": str(error)}), 404
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
 
 @devices_api.route("/api/v1/devices/<device_id>/thresholds", methods=["POST"])
 def create_threshold_for_device(device_id: str):
