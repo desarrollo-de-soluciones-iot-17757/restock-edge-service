@@ -133,4 +133,4 @@ class TelemetryRecord:
         self.humidity_percentage = humidity_percentage
         self.assigned_batch_id = assigned_batch_id
         self.device_id = device_id
-        self.timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        self.timestamp: str = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
