@@ -35,6 +35,7 @@ class DeviceRepository:
                 device.device_token,
                 device.status,
                 device.created_at,
+                device.display_mode,
             )
         except peewee.DoesNotExist:
             return None
@@ -67,6 +68,7 @@ class DeviceRepository:
                 device.device_token,
                 device.status,
                 device.created_at,
+                device.display_mode,
             )
         except peewee.DoesNotExist:
             # Fallback check if device_id exists
@@ -78,6 +80,7 @@ class DeviceRepository:
                     device.device_token,
                     device.status,
                     device.created_at,
+                    device.display_mode,
                 )
             return None
 
@@ -99,6 +102,7 @@ class DeviceRepository:
             device.device_token,
             device.status,
             device.created_at,
+            device.display_mode,
         )
 
     @staticmethod
@@ -116,6 +120,7 @@ class DeviceRepository:
                 existing_id.device_token,
                 existing_id.status,
                 existing_id.created_at,
+                existing_id.display_mode,
             ), False
 
         # 2. If another row holds this device_token, remove conflicting token or update it
@@ -123,7 +128,7 @@ class DeviceRepository:
         if existing_token:
             existing_token.delete_instance()
 
-        # 3. Insert fresh device row
+        # 3. Insert a fresh device row
         device = DeviceModel.create(
             device_id=device_id,
             device_token=device_token,
@@ -135,7 +140,25 @@ class DeviceRepository:
             device.device_token,
             device.status,
             device.created_at,
+            device.display_mode,
         ), True
+
+    @staticmethod
+    def update_display_mode(device_id: str, display_mode: str) -> Optional[Device]:
+        """Update the display mode for a registered device."""
+        try:
+            device = DeviceModel.get(DeviceModel.device_id == device_id)
+            device.display_mode = display_mode
+            device.save()
+            return Device(
+                device.device_id,
+                device.device_token,
+                device.status,
+                device.created_at,
+                display_mode=device.display_mode,
+            )
+        except peewee.DoesNotExist:
+            return None
 
     @staticmethod
     def update_status(device_id: str, status: str) -> Optional[Device]:
@@ -149,6 +172,7 @@ class DeviceRepository:
                 device.device_token,
                 device.status,
                 device.created_at,
+                device.display_mode,
             )
         except peewee.DoesNotExist:
             return None
