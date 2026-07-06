@@ -106,31 +106,3 @@ class EnvironmentRecord:
         self.created_at = created_at
         self.temperature_is_anomaly = temperature_is_anomaly
         self.humidity_is_anomaly = humidity_is_anomaly
-
-
-class TelemetryRecord:
-    """Payload class for the telemetry request.
-
-    Attributes:
-        physical_stock (float): The physical stock of the device is expressed in grams.
-        temperature_in_celsius (float): Temperature measurement expressed in degrees Celsius.
-        humidity_percentage (float): Relative humidity measurement expressed as a percentage.
-        assigned_batch_id (str): The batch ID assigned to the device.
-        device_id (str): Identifier of the device that produced the reading.
-        timestamp (str): ISO 8601 timestamp of the reading.
-    """
-
-    def __init__(
-            self,
-            physical_stock: float,
-            temperature_in_celsius: float,
-            humidity_percentage: float,
-            assigned_batch_id: str,
-            device_id: str
-    ):
-        self.physical_stock = physical_stock
-        self.temperature_in_celsius = temperature_in_celsius
-        self.humidity_percentage = humidity_percentage
-        self.assigned_batch_id = assigned_batch_id
-        self.device_id = device_id
-        self.timestamp: str = datetime.now(timezone.utc).isoformat(timespec='milliseconds')

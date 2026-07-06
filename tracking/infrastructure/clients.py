@@ -4,7 +4,8 @@ import requests
 
 from dotenv import load_dotenv
 
-from tracking.domain.entities import TelemetryRecord
+from devices.domain.entities import DeviceThreshold
+from tracking.domain.entities import WeightRecord, EnvironmentRecord
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,15 +19,22 @@ class TelemetrySyncClient:
         self.api_base_url = os.getenv('CLOUD_API_BASE_URL')
         self.telemetry_api_url = os.getenv('CLOUD_TELEMETRY_ULR')
 
-    def sync(self, telemetry: TelemetryRecord) -> None:
+    def sync(
+            self,
+            threshold: DeviceThreshold,
+            weight_telemetry: WeightRecord,
+            environment_telemetry: EnvironmentRecord
+    ) -> None:
         """ Sync telemetry data to the cloud API.
 
-        :param telemetry: TelemetryRecord object containing the telemetry data to be synced.
+        :param threshold: The device threshold entity.
+        :param environment_telemetry: The environment telemetry record to be synced.
+        :param weight_telemetry: The weight telemetry record to be synced.
         :exception ValueError: If the telemetry data is invalid.
         :exception requests.RequestException: If there is an error during the HTTP request.
         """
 
-        payload = self._to_payload(telemetry)
+        payload: dict = self._to_payload(threshold, weight_telemetry, environment_telemetry)
         headers = {
             "Content-Type": "application/json"
         }
@@ -38,12 +46,12 @@ class TelemetrySyncClient:
             return
 
         if response.status_code == 200:
-            logging.info("Telemetry synced successfully for device %s", telemetry.device_id)
+            logging.info("Telemetry synced successfully for device %s", payload["device_id"])
             return
 
         logging.warning(
             "Failed to sync telemetry for device %s. Status code: %s, Response: %s",
-            telemetry.device_id,
+            payload["device_id"],
             response.status_code,
             response.text
         )
@@ -51,27 +59,31 @@ class TelemetrySyncClient:
         return
 
     @staticmethod
-    def _to_payload(telemetry: TelemetryRecord) -> dict:
+    def _to_payload(
+            threshold: DeviceThreshold,
+            weight_telemetry: WeightRecord,
+            environment_telemetry: EnvironmentRecord
+    ) -> dict:
         """Convert a TelemetryRecord to a payload for the telemetry API."""
 
         try:
-            payload_physical_stock = float(telemetry.physical_stock)
+            payload_physical_stock = float(weight_telemetry.physical_stock)
             if payload_physical_stock < 0:
                 raise ValueError("Physical stock must be a positive number")
 
-            payload_temperature_in_celsius = float(telemetry.temperature_in_celsius)
+            payload_temperature_in_celsius = float(environment_telemetry.temperature)
             if payload_temperature_in_celsius < -273.15 or payload_temperature_in_celsius > 100:
                 raise ValueError("Temperature must be a valid temperature in Celsius")
 
-            payload_humidity_percentage = float(telemetry.humidity_percentage)
+            payload_humidity_percentage = float(environment_telemetry.humidity)
             if payload_humidity_percentage < 0 or payload_humidity_percentage > 100:
                 raise ValueError("Humidity must be a valid percentage")
 
-            payload_assigned_batch_id = str(telemetry.assigned_batch_id)
+            payload_assigned_batch_id = str(threshold.assigned_batch_id)
 
-            payload_device_id = str(telemetry.device_id)
+            payload_device_id = str(threshold.device_id)
 
-            payload_timestamp = telemetry.timestamp
+            payload_timestamp = weight_telemetry.created_at.isoformat(timespec='milliseconds')
             if not payload_timestamp:
                 raise ValueError("Timestamp is required")
 
