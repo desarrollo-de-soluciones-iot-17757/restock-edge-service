@@ -88,3 +88,6 @@ class TelemetrySyncClient:
         }
 
         return payload
+
+# Singleton instance of the TelemetrySyncClient
+telemetry_sync_client = TelemetrySyncClient()
