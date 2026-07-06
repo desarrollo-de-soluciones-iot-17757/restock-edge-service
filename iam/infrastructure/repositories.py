@@ -138,6 +138,23 @@ class DeviceRepository:
         ), True
 
     @staticmethod
+    def update_display_mode(device_id: str, display_mode: str) -> Optional[Device]:
+        """Update the display mode for a registered device."""
+        try:
+            device = DeviceModel.get(DeviceModel.device_id == device_id)
+            device.display_mode = display_mode
+            device.save()
+            return Device(
+                device.device_id,
+                device.device_token,
+                device.status,
+                device.created_at,
+                display_mode=device.display_mode,
+            )
+        except peewee.DoesNotExist:
+            return None
+
+    @staticmethod
     def update_status(device_id: str, status: str) -> Optional[Device]:
         """Update the lifecycle status for a registered device."""
         try:
