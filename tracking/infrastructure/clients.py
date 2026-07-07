@@ -17,7 +17,7 @@ class TelemetrySyncClient:
     def __init__(self):
         """ Initialize the TelemetrySyncClient with the cloud API base URL and telemetry API URL from environment variables. """
         self.api_base_url = os.getenv('CLOUD_API_BASE_URL')
-        self.telemetry_api_url = os.getenv('CLOUD_TELEMETRY_ULR')
+        self.telemetry_api_url = os.getenv('CLOUD_TELEMETRY_URL')
 
     def sync(
             self,
@@ -50,12 +50,12 @@ class TelemetrySyncClient:
             return
 
         if response.status_code == 200:
-            logging.info("Telemetry synced successfully for device %s", payload["device_id"])
+            logging.info("Telemetry synced successfully for device %s", payload["deviceId"])
             return
 
         logging.warning(
             "Failed to sync telemetry for device %s. Status code: %s, Response: %s",
-            payload["device_id"],
+            payload["deviceId"],
             response.status_code,
             response.text
         )
