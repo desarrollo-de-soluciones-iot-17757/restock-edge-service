@@ -34,7 +34,11 @@ class TelemetrySyncClient:
         :exception requests.RequestException: If there is an error during the HTTP request.
         """
 
-        payload: dict = self._to_payload(threshold, weight_telemetry, environment_telemetry)
+        try:
+            payload: dict = self._to_payload(threshold, weight_telemetry, environment_telemetry)
+        except (ValueError, TypeError, AttributeError) as e:
+            logging.error("Invalid telemetry sync payload: %s", e)
+            return
         headers = {
             "Content-Type": "application/json"
         }
@@ -87,7 +91,7 @@ class TelemetrySyncClient:
             if not payload_timestamp:
                 raise ValueError("Timestamp is required")
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
             raise ValueError("Invalid data format")
 
         payload = {
