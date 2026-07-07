@@ -185,8 +185,11 @@ class WeightRecordApplicationService:
             device_id, environment_record.temperature if environment_record else None, environment_record.humidity if environment_record else None, environment_record.created_at.isoformat() if environment_record else None
         )
 
-        # Sync data with the cloud API
-        telemetry_sync_client.sync(device_threshold, record, environment_record)
+        # Sync data with the cloud API. Best-effort: never fails the local telemetry use-case.
+        try:
+            telemetry_sync_client.sync(device_threshold, record, environment_record)
+        except Exception as ex:
+            logging.exception("Unexpected error syncing weight telemetry to cloud: %s", ex)
 
         # Returns the saved record and updated averages
         return saved_record, averages
