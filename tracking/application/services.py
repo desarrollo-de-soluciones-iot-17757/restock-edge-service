@@ -173,8 +173,13 @@ class WeightRecordApplicationService:
         recent_records = self.weight_record_repository.find_by_device_in_interval(device_id)
         averages = self.weight_record_service.calculate_averages(recent_records)
 
-        # Retrieve the last registered environment record
-        environment_record = self.environment_record_repository.find_last_record_by_device(device_id)
+        # Retrieve the last registered environment record when available.
+        environment_record_repository = getattr(self, "environment_record_repository", None)
+        environment_record = (
+            environment_record_repository.find_last_record_by_device(device_id)
+            if environment_record_repository
+            else None
+        )
         logging.info(
             "Last environment record for device %s: temperature=%s, humidity=%s, timestamp=%s",
             device_id, environment_record.temperature if environment_record else None, environment_record.humidity if environment_record else None, environment_record.created_at.isoformat() if environment_record else None
@@ -262,6 +267,17 @@ class EnvironmentRecordApplicationService:
     def _is_outside_range(value: float, minimum: float, maximum: float) -> bool:
         return value < minimum or value > maximum
 
+    @staticmethod
+    def _send_environment_telemetry_to_cloud(
+        threshold: DeviceThreshold | None,
+        weight_record: WeightRecord | None,
+        environment_record: EnvironmentRecord,
+    ) -> None:
+        try:
+            telemetry_sync_client.sync(threshold, weight_record, environment_record)
+        except Exception as ex:
+            logging.exception("Unexpected error syncing environment telemetry to cloud: %s", ex)
+
     def create_environment_record(
         self,
         device_id: str,
@@ -299,7 +315,12 @@ class EnvironmentRecordApplicationService:
             raise ValueError("Device not found")
 
         thresholds = self._get_thresholds_for_device(device_id)
-        threshold: DeviceThreshold = self.device_threshold_repository.get_by_device_id(device_id)
+
+        try:
+            threshold: DeviceThreshold | None = self.device_threshold_repository.get_by_device_id(device_id)
+        except Exception:
+            threshold = None
+
         temperature_is_anomaly = self._is_outside_range(
             float(temperature),
             thresholds["min_temperature"],
@@ -326,10 +347,16 @@ class EnvironmentRecordApplicationService:
         )
         averages = self.environment_record_service.calculate_averages(recent_records)
 
-        # Fetch the last weight record
-        last_weight_record = self.weight_record_repository.find_last_record_by_device(device_id)
+        # Fetch the last weight record when available.
+        weight_record_repository = getattr(self, "weight_record_repository", None)
+        last_weight_record = (
+            weight_record_repository.find_last_record_by_device(device_id)
+            if weight_record_repository
+            else None
+        )
 
-        # Sync data with the cloud API
-        telemetry_sync_client.sync(threshold, record, last_weight_record)
+        # Sync data with the cloud API after local persistence. Cloud sync must
+        # not block the MQTT response expected by the embedded device.
+        self._send_environment_telemetry_to_cloud(threshold, last_weight_record, record)
 
         return saved_record, averages

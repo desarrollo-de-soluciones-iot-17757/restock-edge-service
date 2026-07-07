@@ -182,14 +182,23 @@ class MQTTClient:
 
     def publish(self, topic, payload, qos=1):
         """
-        Function to publish a message to a specified topic.
-
-        :param topic: The topic to publish the message to.
-        :param payload: The message to be published.
-        :param qos: The quality of service level.
+        Publish a JSON payload and wait until the broker accepts it.
         """
+        if not self.connected:
+            self.connect()
 
-        self.client.publish(topic, json.dumps(payload), qos=qos)
+        result = self.client.publish(topic, json.dumps(payload), qos=qos)
+        result.wait_for_publish(timeout=3)
+
+        if result.rc != mqtt_client.MQTT_ERR_SUCCESS:
+            logging.error(
+                "MQTT publish failed for topic %s with result code %s",
+                topic,
+                result.rc
+            )
+            raise ValueError(f"MQTT publish failed with result code {result.rc}")
+
+        logging.info("MQTT publish confirmed for topic %s", topic)
 
 
 # A singleton instance of the MQTTClient

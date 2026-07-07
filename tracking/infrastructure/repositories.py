@@ -106,8 +106,8 @@ class WeightRecordRepository:
         return records
 
     @classmethod
-    def find_last_record_by_device(cls, device_id: str) -> WeightRecord:
-        """Retrieve the last weight record for a device."""
+    def find_last_record_by_device(cls, device_id: str) -> WeightRecord | None:
+        """Retrieve the last weight record for a device, if one exists."""
         query = (
             WeightRecordModel
             .select()
@@ -115,7 +115,11 @@ class WeightRecordRepository:
             .order_by(WeightRecordModel.created_at.desc())
             .limit(1)
         )
-        record = query.get()
+
+        record = query.first()
+
+        if record is None:
+            return None
 
         return WeightRecord(
             record.device_id,
@@ -225,8 +229,8 @@ class EnvironmentRecordRepository:
         return records
 
     @classmethod
-    def find_last_record_by_device(cls, device_id: str) -> EnvironmentRecord:
-        """Retrieve the last environment record for a device."""
+    def find_last_record_by_device(cls, device_id: str) -> EnvironmentRecord | None:
+        """Retrieve the last environment record for a device, if one exists."""
         query = (
             EnvironmentRecordModel
             .select()
@@ -234,7 +238,11 @@ class EnvironmentRecordRepository:
             .order_by(EnvironmentRecordModel.created_at.desc())
             .limit(1)
         )
-        record = query.get()
+
+        record = query.first()
+
+        if record is None:
+            return None
 
         return EnvironmentRecord(
             record.device_id,
